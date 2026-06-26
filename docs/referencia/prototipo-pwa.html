@@ -1,0 +1,907 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0F172A">
+  <title>Asistencia · prototipo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            primary: '#0F172A',
+            'primary-soft': '#1E293B',
+            'on-primary': '#FFFFFF',
+            accent: '#0369A1',
+            'accent-soft': '#0284C7',
+            background: '#F8FAFC',
+            surface: '#FFFFFF',
+            foreground: '#020617',
+            muted: '#E8ECF1',
+            'muted-fg': '#64748B',
+            border: '#E2E8F0',
+            destructive: '#DC2626',
+            'state-presente': '#16A34A',
+            'state-presente-bg': '#DCFCE7',
+            'state-tarde': '#D97706',
+            'state-tarde-bg': '#FEF3C7',
+            'state-justificado': '#0369A1',
+            'state-justificado-bg': '#DBEAFE',
+            'state-ausente': '#DC2626',
+            'state-ausente-bg': '#FEE2E2',
+          },
+          letterSpacing: {
+            tightest: '-0.04em',
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    html, body {
+      font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+      background: #F1F5F9;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    body {
+      min-height: 100dvh;
+    }
+    /* Phone-shaped frame on desktop, full-bleed on mobile */
+    @media (min-width: 768px) {
+      .app-frame {
+        max-width: 420px;
+        margin: 24px auto;
+        height: calc(100dvh - 48px);
+        border-radius: 36px;
+        box-shadow: 0 30px 80px -20px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+      }
+    }
+    @media (max-width: 767px) {
+      .app-frame { min-height: 100dvh; }
+    }
+    .scrim { background: linear-gradient(180deg, rgba(248,250,252,0) 0%, rgba(248,250,252,1) 70%); }
+    .scanner-frame {
+      background:
+        linear-gradient(to right, #FFFFFF 4px, transparent 4px) 0 0 / 24px 4px no-repeat,
+        linear-gradient(to right, #FFFFFF 4px, transparent 4px) 0 100% / 24px 4px no-repeat,
+        linear-gradient(to bottom, #FFFFFF 4px, transparent 4px) 0 0 / 4px 24px no-repeat,
+        linear-gradient(to bottom, #FFFFFF 4px, transparent 4px) 100% 0 / 4px 24px no-repeat,
+        linear-gradient(to left, #FFFFFF 4px, transparent 4px) 100% 0 / 24px 4px no-repeat,
+        linear-gradient(to left, #FFFFFF 4px, transparent 4px) 100% 100% / 24px 4px no-repeat,
+        linear-gradient(to bottom, #FFFFFF 4px, transparent 4px) 100% 100% / 4px 24px no-repeat,
+        linear-gradient(to top, #FFFFFF 4px, transparent 4px) 0 100% / 4px 24px no-repeat;
+    }
+    @keyframes scan {
+      0% { transform: translateY(0); opacity: 0.9; }
+      50% { opacity: 0.4; }
+      100% { transform: translateY(208px); opacity: 0.9; }
+    }
+    .scan-line { animation: scan 2.2s ease-in-out infinite alternate; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .view-enter { animation: fadeUp 220ms ease-out; }
+    /* hide scrollbar in main scroll area but keep functionality */
+    .scroll-area::-webkit-scrollbar { display: none; }
+    .scroll-area { scrollbar-width: none; }
+    [data-active="true"] .nav-icon { color: #0F172A; }
+    [data-active="true"] .nav-label { color: #0F172A; font-weight: 600; }
+    [data-active="true"] .nav-dot { opacity: 1; }
+    /* Subtle gradient on hero card */
+    .hero-card {
+      background: linear-gradient(160deg, #0F172A 0%, #1E293B 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(800px 200px at 100% 0%, rgba(3, 105, 161, 0.30), transparent 60%);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="text-foreground antialiased">
+
+<!-- ─────────────────────────── APP FRAME ─────────────────────────── -->
+<div class="app-frame bg-background relative flex flex-col">
+
+  <!-- ─── TOP BAR ─── -->
+  <header id="topbar" class="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
+    <div class="flex items-center justify-between px-5 h-14">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
+          <!-- icon: check -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="leading-tight">
+          <div class="text-[15px] font-semibold tracking-tightest">Asistencia</div>
+          <div id="topbar-sub" class="text-[11px] text-muted-fg">Ficha 3145789 · SENA</div>
+        </div>
+      </div>
+      <button class="w-10 h-10 rounded-xl hover:bg-muted active:bg-muted transition-colors flex items-center justify-center text-muted-fg" data-nav="ajustes" aria-label="Ajustes">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ─── MAIN SCROLLABLE ─── -->
+  <main id="view" class="flex-1 scroll-area overflow-y-auto pb-24"></main>
+
+  <!-- ─── BOTTOM NAV ─── -->
+  <nav class="absolute bottom-0 inset-x-0 z-30 bg-surface/95 backdrop-blur-xl border-t border-border">
+    <div class="flex items-stretch justify-around px-2 pt-2 pb-[max(8px,env(safe-area-inset-bottom))]">
+      <button data-nav="hoy" class="flex-1 flex flex-col items-center gap-1 py-2 rounded-xl">
+        <svg class="nav-icon text-muted-fg transition-colors" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span class="nav-label text-[11px] font-medium text-muted-fg transition-colors">Hoy</span>
+        <span class="nav-dot opacity-0 h-1 w-1 rounded-full bg-primary -mt-0.5 transition-opacity"></span>
+      </button>
+      <button data-nav="scan" class="flex-1 flex flex-col items-center gap-1 py-2 rounded-xl">
+        <svg class="nav-icon text-muted-fg transition-colors" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M20 14v3"/><path d="M17 20h4"/><path d="M14 20v1"/></svg>
+        <span class="nav-label text-[11px] font-medium text-muted-fg transition-colors">Escanear</span>
+        <span class="nav-dot opacity-0 h-1 w-1 rounded-full bg-primary -mt-0.5 transition-opacity"></span>
+      </button>
+      <button data-nav="aprendices" class="flex-1 flex flex-col items-center gap-1 py-2 rounded-xl">
+        <svg class="nav-icon text-muted-fg transition-colors" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="nav-label text-[11px] font-medium text-muted-fg transition-colors">Aprendices</span>
+        <span class="nav-dot opacity-0 h-1 w-1 rounded-full bg-primary -mt-0.5 transition-opacity"></span>
+      </button>
+      <button data-nav="historico" class="flex-1 flex flex-col items-center gap-1 py-2 rounded-xl">
+        <svg class="nav-icon text-muted-fg transition-colors" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.74 9.74 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+        <span class="nav-label text-[11px] font-medium text-muted-fg transition-colors">Histórico</span>
+        <span class="nav-dot opacity-0 h-1 w-1 rounded-full bg-primary -mt-0.5 transition-opacity"></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ─── TOAST CONTAINER ─── -->
+  <div id="toast" class="absolute bottom-24 inset-x-0 z-40 pointer-events-none flex justify-center"></div>
+</div>
+
+<!-- ─────────────────────────── DATA + ROUTER ─────────────────────────── -->
+<script>
+// ─────────── MOCK DATA ───────────
+const APRENDICES = [
+  { ficha: '31145789', nombre: 'Luis Gerardo Gómez',     documento: '80123456', foto: 'https://i.pravatar.cc/100?img=12' },
+  { ficha: '465789',   nombre: 'Pedro Luis Gómez',        documento: '80234567', foto: 'https://i.pravatar.cc/100?img=33' },
+  { ficha: '789003',   nombre: 'Camilo Daniel Escudero',  documento: '80345678', foto: 'https://i.pravatar.cc/100?img=8' },
+  { ficha: '120544',   nombre: 'Ana Lucía Herrera',       documento: '80456789', foto: 'https://i.pravatar.cc/100?img=47' },
+  { ficha: '334512',   nombre: 'Diego Pérez Castillo',    documento: '80567890', foto: 'https://i.pravatar.cc/100?img=15' },
+  { ficha: '887421',   nombre: 'María Camila Rojas',      documento: '80678901', foto: 'https://i.pravatar.cc/100?img=44' },
+  { ficha: '210907',   nombre: 'Andrés Felipe Mora',      documento: '80789012', foto: 'https://i.pravatar.cc/100?img=18' },
+  { ficha: '992100',   nombre: 'Valentina Suárez',        documento: '80890123', foto: 'https://i.pravatar.cc/100?img=49' },
+];
+
+// Estado del día: ficha → { estado, hora }
+let HOY = {
+  '31145789': { estado: 'Presente',    hora: '07:02' },
+  '465789':   { estado: 'Presente',    hora: '07:05' },
+  '789003':   { estado: 'Tarde',       hora: '07:34' },
+  '887421':   { estado: 'Justificado', hora: '07:00' },
+};
+
+const HISTORICO = [
+  { fecha: '2026-05-22', label: 'Ayer · vie 22 may',     presente: 7, tarde: 1, justificado: 0, ausente: 0, total: 8 },
+  { fecha: '2026-05-21', label: 'jue 21 may',            presente: 6, tarde: 1, justificado: 1, ausente: 0, total: 8 },
+  { fecha: '2026-05-20', label: 'mié 20 may',            presente: 5, tarde: 2, justificado: 1, ausente: 0, total: 8 },
+  { fecha: '2026-05-19', label: 'mar 19 may',            presente: 8, tarde: 0, justificado: 0, ausente: 0, total: 8 },
+  { fecha: '2026-05-16', label: 'sáb 16 may · festivo',  presente: 0, tarde: 0, justificado: 0, ausente: 0, total: 0 },
+];
+
+// Matriz histórica de los últimos 10 días lectivos (oldest → newest).
+// Estados: P=Presente, T=Tarde, J=Justificado, A=Ausente.
+// El último elemento del array es el día más reciente registrado.
+// dias[0] = hace 9 días; dias[9] = ayer (no incluye HOY)
+const ASISTENCIA_HIST = {
+  '31145789': ['P','P','P','P','P','P','P','P','P','P'], // Luis — perfecta
+  '465789':   ['P','T','P','P','P','P','P','T','P','P'], // Pedro — 2 tardes scattered
+  '789003':   ['P','P','A','T','P','P','T','A','P','T'], // Camilo — 2 ausencias disco
+  '120544':   ['P','A','P','A','P','A','P','J','P','P'], // Ana — 3 discontinuas + 1 just
+  '334512':   ['P','P','P','A','A','A','A','A','P','P'], // Diego — racha de 5 atrás, luego mejoró
+  '887421':   ['P','P','J','P','P','J','P','P','P','J'], // María — todas justificadas
+  '210907':   ['P','A','P','A','P','A','P','A','A','A'], // Andrés — racha actual de 3 + scattered
+  '992100':   ['P','P','P','P','A','A','A','A','A','A'], // Valentina — racha actual de 6 — ALERTA
+};
+const DIAS_LABEL = ['lun 12','mar 13','mié 14','jue 15','vie 16','lun 19','mar 20','mié 21','jue 22','vie 23'];
+const DIAS_SEMANA = ['lun','mar','mié','jue','vie','lun','mar','mié','jue','vie'];
+
+let LAST_ACTION = null;
+
+const ESTADOS = {
+  Presente:    { color: 'state-presente',    bg: 'state-presente-bg',    icon: 'check' },
+  Tarde:       { color: 'state-tarde',       bg: 'state-tarde-bg',       icon: 'clock' },
+  Justificado: { color: 'state-justificado', bg: 'state-justificado-bg', icon: 'shield' },
+  Ausente:     { color: 'state-ausente',     bg: 'state-ausente-bg',     icon: 'x' },
+};
+
+const ICONS = {
+  check:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  clock:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  shield:  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+  x:       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  search:  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+  plus:    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  qr:      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M20 14v3"/><path d="M17 20h4"/><path d="M14 20v1"/></svg>',
+  undo:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>',
+  download:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  chevron: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
+};
+
+// ─────────── HELPERS ───────────
+function $(s, root = document) { return root.querySelector(s); }
+function fichaActivos() { return APRENDICES.length; } // todos activos en mock
+function presentesHoy() { return Object.values(HOY).filter(s => s.estado === 'Presente' || s.estado === 'Tarde').length; }
+function faltantesHoy() { return APRENDICES.filter(a => !HOY[a.ficha]); }
+function pillHTML(estado) {
+  const e = ESTADOS[estado];
+  if (!e) return '';
+  return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-${e.color} bg-${e.bg} text-[11px] font-semibold">${ICONS[e.icon]}<span>${estado}</span></span>`;
+}
+function avatarHTML(a, size = 40) {
+  return `<div class="shrink-0 rounded-full bg-muted overflow-hidden" style="width:${size}px;height:${size}px"><img src="${a.foto}" alt="" loading="lazy" class="w-full h-full object-cover" onerror="this.style.display='none'"></div>`;
+}
+
+// ─── ANALYTICS ───
+function statsAprendiz(ficha) {
+  const arr = ASISTENCIA_HIST[ficha] || [];
+  const total = arr.length;
+  const presente = arr.filter(d => d === 'P').length;
+  const tarde = arr.filter(d => d === 'T').length;
+  const justificado = arr.filter(d => d === 'J').length;
+  const ausente = arr.filter(d => d === 'A').length;
+  // computa: efectivo = P+T (asistió aunque tarde), J cuenta neutro
+  const dias_validos = total - justificado;
+  const asistio = presente + tarde;
+  const pct = dias_validos > 0 ? Math.round((asistio / dias_validos) * 100) : 100;
+  // racha actual de ausencias (consecutivas desde el día más reciente)
+  let racha_actual = 0;
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (arr[i] === 'A') racha_actual++;
+    else break;
+  }
+  // racha máxima histórica
+  let racha_max = 0, cur = 0;
+  for (const d of arr) {
+    if (d === 'A') { cur++; racha_max = Math.max(racha_max, cur); }
+    else cur = 0;
+  }
+  // ausencias discontinuas (total ausencias - racha actual)
+  const ausencias_disco = ausente - racha_actual;
+  // riesgo: SENA típicamente exige >=80% asistencia. Marcamos riesgo si <80% o racha actual >=3
+  const en_riesgo = pct < 80 || racha_actual >= 3;
+  return { total, presente, tarde, justificado, ausente, pct, racha_actual, racha_max, ausencias_disco, en_riesgo, dias_validos, asistio };
+}
+function statsGrupo() {
+  const fichas = APRENDICES.map(a => a.ficha);
+  const stats = fichas.map(f => statsAprendiz(f));
+  const pct_promedio = Math.round(stats.reduce((s, x) => s + x.pct, 0) / stats.length);
+  const en_riesgo = stats.filter(x => x.en_riesgo).length;
+  const total_tardes = stats.reduce((s, x) => s + x.tarde, 0);
+  const total_ausencias = stats.reduce((s, x) => s + x.ausente, 0);
+  const perfectos = stats.filter(x => x.pct === 100).length;
+  // mejor/peor día semana — agregamos por índice (0..9) y agrupamos por DIAS_SEMANA
+  const por_dia = {};
+  for (let i = 0; i < 10; i++) {
+    const dia = DIAS_SEMANA[i];
+    if (!por_dia[dia]) por_dia[dia] = { asis: 0, total: 0 };
+    for (const f of fichas) {
+      const d = (ASISTENCIA_HIST[f] || [])[i];
+      if (d && d !== 'J') {
+        por_dia[dia].total++;
+        if (d === 'P' || d === 'T') por_dia[dia].asis++;
+      }
+    }
+  }
+  const dias = ['lun','mar','mié','jue','vie'];
+  const con_pct = dias.map(d => ({ dia: d, pct: por_dia[d].total ? Math.round((por_dia[d].asis / por_dia[d].total) * 100) : 0 }));
+  const mejor = con_pct.reduce((a, b) => a.pct >= b.pct ? a : b);
+  const peor = con_pct.reduce((a, b) => a.pct <= b.pct ? a : b);
+  return { pct_promedio, en_riesgo, total_tardes, total_ausencias, perfectos, mejor, peor, por_dia: con_pct };
+}
+function toast(msg, opts = {}) {
+  const el = document.createElement('div');
+  el.className = 'pointer-events-auto inline-flex items-center gap-3 px-4 py-2.5 rounded-xl bg-primary text-on-primary shadow-2xl text-sm font-medium animate-[fadeUp_180ms_ease-out]';
+  el.innerHTML = opts.undo
+    ? `<span>${msg}</span><button class="text-accent-soft font-semibold underline-offset-2 hover:underline" onclick="doUndo()">deshacer</button>`
+    : `<span>${msg}</span>`;
+  $('#toast').innerHTML = '';
+  $('#toast').appendChild(el);
+  if (!opts.persist) setTimeout(() => el.remove(), opts.duration || 3200);
+}
+
+// ─────────── ACTIONS ───────────
+function marcar(ficha, estado) {
+  const prev = HOY[ficha];
+  LAST_ACTION = { ficha, prev };
+  const now = new Date();
+  HOY[ficha] = {
+    estado,
+    hora: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
+  };
+  const a = APRENDICES.find(x => x.ficha === ficha);
+  toast(`${estado} · ${a ? a.nombre.split(' ')[0] : ficha}`, { undo: true });
+  render();
+}
+function doUndo() {
+  if (!LAST_ACTION) return;
+  const { ficha, prev } = LAST_ACTION;
+  if (prev) HOY[ficha] = prev; else delete HOY[ficha];
+  LAST_ACTION = null;
+  $('#toast').innerHTML = '';
+  render();
+}
+
+// ─────────── ROUTER ───────────
+const VIEWS = {};
+function navigate(view) {
+  if (!VIEWS[view]) view = 'hoy';
+  location.hash = '#' + view;
+}
+function render() {
+  const view = (location.hash.replace('#','') || 'hoy');
+  const active = VIEWS[view] ? view : 'hoy';
+  $('#view').innerHTML = VIEWS[active]();
+  $('#view').scrollTop = 0;
+  // top bar context
+  $('#topbar-sub').textContent = SUBTITLES[active] || '';
+  // nav active
+  document.querySelectorAll('[data-nav]').forEach(btn => {
+    btn.setAttribute('data-active', btn.dataset.nav === active);
+  });
+}
+
+const SUBTITLES = {
+  hoy:        'Sábado 23 may · ficha 3145789',
+  scan:       'Escanea o marca a mano',
+  aprendices: '8 aprendices · ficha 3145789',
+  historico:  'Histórico de sesiones',
+  ajustes:    'Conexión y preferencias',
+};
+
+// ─────────── VIEW: HOY ───────────
+VIEWS.hoy = () => {
+  const total = fichaActivos();
+  const presentes = presentesHoy();
+  const pct = total ? Math.round((presentes / total) * 100) : 0;
+  const faltan = faltantesHoy();
+  return `
+  <div class="view-enter px-5 pt-5 pb-6 space-y-5">
+    <!-- HERO STAT CARD -->
+    <section class="hero-card rounded-3xl p-6 text-on-primary">
+      <div class="flex items-start justify-between mb-5">
+        <div>
+          <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-on-primary/60">Asistencia hoy</div>
+          <div class="text-on-primary/80 text-sm mt-1">${new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+        </div>
+        <div class="text-right">
+          <div class="text-4xl font-bold tracking-tightest leading-none tabular-nums">${presentes}<span class="text-on-primary/40 font-medium text-2xl">/${total}</span></div>
+          <div class="text-on-primary/60 text-xs mt-1 font-medium">${pct}% asistencia</div>
+        </div>
+      </div>
+      <div class="h-2 rounded-full bg-on-primary/15 overflow-hidden">
+        <div class="h-full bg-on-primary rounded-full transition-all duration-700" style="width:${pct}%"></div>
+      </div>
+      <div class="flex items-center gap-2 mt-5">
+        <button onclick="navigate('scan')" class="flex-1 inline-flex items-center justify-center gap-2 h-11 rounded-xl bg-on-primary text-primary font-semibold text-sm active:scale-[0.98] transition-transform">
+          ${ICONS.qr}<span>Escanear ficha</span>
+        </button>
+        <button onclick="navigate('aprendices')" class="h-11 px-4 rounded-xl border border-on-primary/20 text-on-primary text-sm font-medium hover:bg-on-primary/10 transition-colors">
+          Lista
+        </button>
+      </div>
+    </section>
+
+    <!-- FALTANTES -->
+    <section>
+      <div class="flex items-baseline justify-between mb-3">
+        <h2 class="text-base font-semibold tracking-tight">Faltan por marcar</h2>
+        <span class="text-xs text-muted-fg tabular-nums font-medium">${faltan.length} de ${total}</span>
+      </div>
+      ${faltan.length === 0 ? `
+        <div class="rounded-2xl border border-border bg-surface p-6 text-center">
+          <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-state-presente-bg text-state-presente mb-3">
+            ${ICONS.check}
+          </div>
+          <div class="font-semibold text-sm">Todos marcados</div>
+          <div class="text-muted-fg text-xs mt-1">0 faltantes hoy</div>
+        </div>
+      ` : `
+        <div class="rounded-2xl bg-surface border border-border divide-y divide-border overflow-hidden">
+          ${faltan.map(a => `
+            <div class="flex items-center gap-3 px-4 py-3">
+              ${avatarHTML(a, 40)}
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium truncate">${a.nombre}</div>
+                <div class="text-[11px] text-muted-fg tabular-nums">${a.ficha}</div>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button onclick="marcar('${a.ficha}','Presente')" title="Presente" class="w-9 h-9 rounded-lg bg-state-presente-bg text-state-presente hover:brightness-95 active:scale-95 transition-all flex items-center justify-center">${ICONS.check}</button>
+                <button onclick="marcar('${a.ficha}','Tarde')" title="Tarde" class="w-9 h-9 rounded-lg bg-state-tarde-bg text-state-tarde hover:brightness-95 active:scale-95 transition-all flex items-center justify-center">${ICONS.clock}</button>
+                <button onclick="marcar('${a.ficha}','Justificado')" title="Justificado" class="w-9 h-9 rounded-lg bg-state-justificado-bg text-state-justificado hover:brightness-95 active:scale-95 transition-all flex items-center justify-center">${ICONS.shield}</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `}
+    </section>
+
+    <!-- MARCADOS HOY -->
+    ${presentes > 0 ? `
+    <section>
+      <div class="flex items-baseline justify-between mb-3">
+        <h2 class="text-base font-semibold tracking-tight">Ya marcados</h2>
+        <span class="text-xs text-muted-fg font-medium tabular-nums">${Object.keys(HOY).length}</span>
+      </div>
+      <div class="rounded-2xl bg-surface border border-border divide-y divide-border overflow-hidden">
+        ${Object.entries(HOY).map(([ficha, info]) => {
+          const a = APRENDICES.find(x => x.ficha === ficha);
+          if (!a) return '';
+          return `
+            <div class="flex items-center gap-3 px-4 py-3">
+              ${avatarHTML(a, 40)}
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium truncate">${a.nombre}</div>
+                <div class="text-[11px] text-muted-fg tabular-nums">${info.hora} · ${a.ficha}</div>
+              </div>
+              ${pillHTML(info.estado)}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </section>
+    ` : ''}
+  </div>
+  `;
+};
+
+// ─────────── VIEW: SCAN ───────────
+let SCAN_LAST = null;
+
+VIEWS.scan = () => {
+  return `
+  <div class="view-enter px-5 pt-5 pb-6 space-y-5">
+    <!-- VIEWFINDER -->
+    <section class="relative aspect-square rounded-3xl overflow-hidden bg-primary">
+      <div class="absolute inset-0 opacity-30" style="background: radial-gradient(120% 60% at 50% 0%, #1E293B 0%, #0F172A 60%);"></div>
+      <!-- mock camera surface -->
+      <div class="absolute inset-0 flex items-center justify-center">
+        <div class="text-on-primary/30 text-xs font-medium uppercase tracking-[0.18em]">Cámara · vista previa</div>
+      </div>
+      <!-- scan frame -->
+      <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-52 h-52">
+        <div class="absolute inset-0 scanner-frame"></div>
+        <div class="scan-line absolute left-2 right-2 top-2 h-px bg-accent-soft shadow-[0_0_12px_2px_rgba(2,132,199,0.6)]"></div>
+      </div>
+      <div class="absolute inset-x-0 bottom-0 px-6 pb-5 pt-12 bg-gradient-to-t from-primary to-transparent">
+        <div class="text-on-primary text-sm font-medium text-center">Apunta al QR de la ficha</div>
+        <button onclick="simularScan()" class="w-full mt-3 h-11 rounded-xl bg-accent text-on-primary text-sm font-semibold active:scale-[0.98] transition-transform">
+          Simular escaneo
+        </button>
+      </div>
+    </section>
+
+    <!-- LAST SCAN RESULT -->
+    ${SCAN_LAST ? `
+    <section class="rounded-2xl bg-surface border border-border overflow-hidden view-enter">
+      <div class="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/40">
+        <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-fg">Última lectura</div>
+        ${HOY[SCAN_LAST.ficha] ? pillHTML(HOY[SCAN_LAST.ficha].estado) : '<span class="text-[11px] font-medium text-muted-fg">sin marcar</span>'}
+      </div>
+      <div class="p-4 flex items-center gap-4">
+        ${avatarHTML(SCAN_LAST, 56)}
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-[15px] truncate">${SCAN_LAST.nombre}</div>
+          <div class="text-xs text-muted-fg tabular-nums">${SCAN_LAST.ficha} · doc ${SCAN_LAST.documento}</div>
+        </div>
+      </div>
+      <div class="px-4 pb-4 grid grid-cols-3 gap-2">
+        <button onclick="marcar('${SCAN_LAST.ficha}','Presente')" class="h-12 rounded-xl bg-state-presente text-white font-semibold text-sm active:scale-[0.98] transition flex flex-col items-center justify-center gap-0.5">
+          <span class="text-base leading-none">${ICONS.check}</span>
+          <span class="text-[11px]">Presente</span>
+        </button>
+        <button onclick="marcar('${SCAN_LAST.ficha}','Tarde')" class="h-12 rounded-xl bg-state-tarde text-white font-semibold text-sm active:scale-[0.98] transition flex flex-col items-center justify-center gap-0.5">
+          <span class="text-base leading-none">${ICONS.clock}</span>
+          <span class="text-[11px]">Tarde</span>
+        </button>
+        <button onclick="marcar('${SCAN_LAST.ficha}','Justificado')" class="h-12 rounded-xl bg-state-justificado text-white font-semibold text-sm active:scale-[0.98] transition flex flex-col items-center justify-center gap-0.5">
+          <span class="text-base leading-none">${ICONS.shield}</span>
+          <span class="text-[11px]">Justificado</span>
+        </button>
+      </div>
+    </section>
+    ` : `
+    <section class="rounded-2xl border border-dashed border-border bg-surface px-5 py-8 text-center">
+      <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted text-muted-fg mb-3">${ICONS.qr}</div>
+      <div class="text-sm font-medium">Sin lecturas todavía</div>
+      <div class="text-xs text-muted-fg mt-1 leading-relaxed">Pulsa "Simular escaneo"<br>para probar el flujo</div>
+    </section>
+    `}
+
+    <!-- UNDO -->
+    ${LAST_ACTION ? `
+    <button onclick="doUndo()" class="w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl border border-border bg-surface text-sm font-medium text-muted-fg hover:bg-muted transition-colors">
+      ${ICONS.undo}<span>Deshacer última marca</span>
+    </button>
+    ` : ''}
+  </div>
+  `;
+};
+
+function simularScan() {
+  const candidatos = APRENDICES.filter(a => !HOY[a.ficha]);
+  const pool = candidatos.length ? candidatos : APRENDICES;
+  SCAN_LAST = pool[Math.floor(Math.random() * pool.length)];
+  render();
+}
+
+// ─────────── VIEW: APRENDICES ───────────
+let SEARCH = '';
+VIEWS.aprendices = () => {
+  const filtered = APRENDICES.filter(a =>
+    !SEARCH ||
+    a.nombre.toLowerCase().includes(SEARCH.toLowerCase()) ||
+    a.ficha.includes(SEARCH)
+  );
+  return `
+  <div class="view-enter px-5 pt-5 pb-6 space-y-4">
+    <!-- search -->
+    <div class="sticky top-0 -mx-5 px-5 pt-1 pb-3 bg-background z-10">
+      <div class="relative">
+        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-fg">${ICONS.search}</span>
+        <input
+          type="search"
+          inputmode="search"
+          placeholder="Buscar por nombre o ficha"
+          value="${SEARCH}"
+          oninput="SEARCH = this.value; render()"
+          class="w-full h-11 rounded-xl pl-11 pr-4 bg-surface border border-border text-sm placeholder:text-muted-fg/70 focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/40 transition"
+        >
+      </div>
+    </div>
+
+    <!-- header -->
+    <div class="flex items-baseline justify-between">
+      <h2 class="text-base font-semibold tracking-tight">Padrón · ${filtered.length}</h2>
+      <button class="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent-soft transition-colors">
+        ${ICONS.plus}<span>Nuevo</span>
+      </button>
+    </div>
+
+    <!-- list -->
+    ${filtered.length === 0 ? `
+      <div class="text-center text-muted-fg text-sm py-10">Sin resultados para "${SEARCH}"</div>
+    ` : `
+    <div class="rounded-2xl bg-surface border border-border divide-y divide-border overflow-hidden">
+      ${filtered.map(a => {
+        const info = HOY[a.ficha];
+        return `
+        <div class="flex items-center gap-3 px-4 py-3">
+          ${avatarHTML(a, 44)}
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium truncate">${a.nombre}</div>
+            <div class="text-[11px] text-muted-fg tabular-nums">${a.ficha} · doc ${a.documento}</div>
+          </div>
+          ${info ? pillHTML(info.estado) : `
+            <button onclick="marcar('${a.ficha}','Presente')" class="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-primary text-on-primary text-xs font-semibold active:scale-95 transition-transform">
+              ${ICONS.check}<span>Marcar</span>
+            </button>
+          `}
+        </div>
+        `;
+      }).join('')}
+    </div>
+    `}
+  </div>
+  `;
+};
+
+// ─────────── VIEW: HISTORICO (analytics dashboard) ───────────
+let SORT_BY = 'riesgo'; // 'riesgo' | 'asistencia' | 'racha'
+VIEWS.historico = () => {
+  const g = statsGrupo();
+  // ordenar aprendices según SORT_BY
+  let lista = APRENDICES.map(a => ({ ...a, stats: statsAprendiz(a.ficha) }));
+  if (SORT_BY === 'riesgo')      lista.sort((x, y) => (y.stats.racha_actual - x.stats.racha_actual) || (x.stats.pct - y.stats.pct));
+  if (SORT_BY === 'asistencia')  lista.sort((x, y) => y.stats.pct - x.stats.pct);
+  if (SORT_BY === 'racha')       lista.sort((x, y) => y.stats.racha_max - x.stats.racha_max);
+  const en_riesgo = lista.filter(a => a.stats.en_riesgo).sort((x, y) => y.stats.racha_actual - x.stats.racha_actual || x.stats.pct - y.stats.pct);
+
+  return `
+  <div class="view-enter px-5 pt-5 pb-6 space-y-5">
+
+    <!-- HERO: asistencia del grupo -->
+    <section class="rounded-3xl bg-surface border border-border p-5">
+      <div class="flex items-start justify-between">
+        <div>
+          <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-fg">Asistencia del grupo</div>
+          <div class="flex items-end gap-2 mt-2">
+            <div class="text-5xl font-bold tracking-tightest leading-none tabular-nums">${g.pct_promedio}<span class="text-muted-fg/40 text-2xl font-medium">%</span></div>
+          </div>
+          <div class="text-xs text-muted-fg mt-1.5">últimos 10 días lectivos</div>
+        </div>
+        <div class="text-right">
+          <div class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-state-presente-bg text-state-presente text-[11px] font-semibold">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+            <span>+4 pts</span>
+          </div>
+          <div class="text-[11px] text-muted-fg mt-1">vs semana ant.</div>
+        </div>
+      </div>
+      <!-- 4 KPIs -->
+      <div class="grid grid-cols-4 gap-3 mt-5">
+        <div>
+          <div class="text-xl font-bold tabular-nums">${g.en_riesgo}</div>
+          <div class="text-[10px] text-muted-fg leading-tight">en riesgo</div>
+        </div>
+        <div>
+          <div class="text-xl font-bold tabular-nums">${g.total_ausencias}</div>
+          <div class="text-[10px] text-muted-fg leading-tight">ausencias</div>
+        </div>
+        <div>
+          <div class="text-xl font-bold tabular-nums">${g.total_tardes}</div>
+          <div class="text-[10px] text-muted-fg leading-tight">tardes</div>
+        </div>
+        <div>
+          <div class="text-xl font-bold tabular-nums text-state-presente">${g.perfectos}</div>
+          <div class="text-[10px] text-muted-fg leading-tight">perfectos</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EN RIESGO -->
+    ${en_riesgo.length > 0 ? `
+    <section>
+      <div class="flex items-center gap-2 mb-3 px-1">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <h2 class="text-base font-semibold tracking-tight">Atención requerida · ${en_riesgo.length}</h2>
+      </div>
+      <div class="space-y-2">
+        ${en_riesgo.slice(0, 3).map(a => `
+          <div class="relative rounded-2xl bg-surface border border-state-ausente/30 overflow-hidden">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-state-ausente"></div>
+            <div class="p-4 pl-5 flex items-center gap-3">
+              ${avatarHTML(a, 44)}
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-semibold truncate">${a.nombre}</div>
+                <div class="text-[11px] text-muted-fg tabular-nums mt-0.5">${a.ficha}</div>
+              </div>
+              <div class="text-right">
+                <div class="text-xs font-semibold ${a.stats.pct < 80 ? 'text-state-ausente' : 'text-state-tarde'} tabular-nums">${a.stats.pct}%</div>
+                <div class="text-[10px] text-muted-fg">asistencia</div>
+              </div>
+            </div>
+            <div class="px-4 pl-5 pb-3 grid grid-cols-3 gap-2 text-center text-[11px]">
+              ${a.stats.racha_actual > 0 ? `
+                <div class="rounded-lg bg-state-ausente-bg text-state-ausente font-semibold py-1.5">
+                  <div class="tabular-nums text-sm leading-none">${a.stats.racha_actual}</div>
+                  <div class="text-[9px] uppercase tracking-wider mt-0.5 font-medium">consec</div>
+                </div>` : `
+                <div class="rounded-lg bg-muted/60 text-muted-fg py-1.5">
+                  <div class="tabular-nums text-sm leading-none">—</div>
+                  <div class="text-[9px] uppercase tracking-wider mt-0.5 font-medium">consec</div>
+                </div>
+              `}
+              <div class="rounded-lg bg-muted/60 text-muted-fg py-1.5">
+                <div class="tabular-nums text-sm leading-none font-semibold text-foreground">${a.stats.ausencias_disco}</div>
+                <div class="text-[9px] uppercase tracking-wider mt-0.5 font-medium">discontinuas</div>
+              </div>
+              <div class="rounded-lg bg-muted/60 text-muted-fg py-1.5">
+                <div class="tabular-nums text-sm leading-none font-semibold text-foreground">${a.stats.tarde}</div>
+                <div class="text-[9px] uppercase tracking-wider mt-0.5 font-medium">tardes</div>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </section>
+    ` : ''}
+
+    <!-- TABLA POR APRENDIZ -->
+    <section>
+      <div class="flex items-baseline justify-between mb-3">
+        <h2 class="text-base font-semibold tracking-tight">Detalle por aprendiz</h2>
+        <div class="flex items-center gap-1 text-[11px]">
+          <button onclick="SORT_BY='riesgo';render()" class="px-2 py-1 rounded-md ${SORT_BY==='riesgo'?'bg-primary text-on-primary':'text-muted-fg hover:bg-muted'} font-medium transition-colors">riesgo</button>
+          <button onclick="SORT_BY='asistencia';render()" class="px-2 py-1 rounded-md ${SORT_BY==='asistencia'?'bg-primary text-on-primary':'text-muted-fg hover:bg-muted'} font-medium transition-colors">% asist</button>
+          <button onclick="SORT_BY='racha';render()" class="px-2 py-1 rounded-md ${SORT_BY==='racha'?'bg-primary text-on-primary':'text-muted-fg hover:bg-muted'} font-medium transition-colors">racha</button>
+        </div>
+      </div>
+      <div class="rounded-2xl bg-surface border border-border overflow-hidden">
+        <!-- header -->
+        <div class="grid grid-cols-[1fr,auto,auto,auto] gap-3 px-4 py-2 bg-muted/40 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-fg">
+          <div>Aprendiz</div>
+          <div class="text-right w-12">Asist</div>
+          <div class="text-right w-10">Cons</div>
+          <div class="text-right w-10">Disc</div>
+        </div>
+        <!-- rows -->
+        <div class="divide-y divide-border">
+          ${lista.map(a => {
+            const s = a.stats;
+            const pctColor = s.pct === 100 ? 'text-state-presente' : s.pct < 80 ? 'text-state-ausente' : 'text-foreground';
+            return `
+            <div class="grid grid-cols-[1fr,auto,auto,auto] gap-3 px-4 py-2.5 items-center hover:bg-muted/30 transition-colors">
+              <div class="flex items-center gap-2.5 min-w-0">
+                ${avatarHTML(a, 28)}
+                <div class="min-w-0">
+                  <div class="text-[13px] font-medium truncate leading-tight">${a.nombre.split(' ').slice(0,2).join(' ')}</div>
+                  <div class="text-[10px] text-muted-fg tabular-nums leading-tight">${a.ficha}</div>
+                </div>
+              </div>
+              <div class="text-right w-12 tabular-nums text-[13px] font-semibold ${pctColor}">${s.pct}%</div>
+              <div class="text-right w-10 tabular-nums text-[13px] ${s.racha_actual >= 3 ? 'text-state-ausente font-semibold' : s.racha_actual > 0 ? 'text-state-tarde font-medium' : 'text-muted-fg/50'}">${s.racha_actual || '—'}</div>
+              <div class="text-right w-10 tabular-nums text-[13px] ${s.ausencias_disco > 0 ? 'text-foreground font-medium' : 'text-muted-fg/50'}">${s.ausencias_disco || '—'}</div>
+            </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+      <div class="text-[10px] text-muted-fg mt-2 px-1 leading-relaxed">
+        <span class="font-medium text-foreground">Cons</span> = días consecutivos faltando hasta hoy ·
+        <span class="font-medium text-foreground">Disc</span> = ausencias discontinuas en el periodo
+      </div>
+    </section>
+
+    <!-- PATRONES POR DÍA DE SEMANA -->
+    <section class="rounded-2xl bg-surface border border-border p-5">
+      <div class="flex items-baseline justify-between">
+        <div>
+          <h3 class="text-sm font-semibold">Patrones de la semana</h3>
+          <div class="text-[11px] text-muted-fg mt-0.5">
+            <span class="text-state-presente font-medium">${g.mejor.dia} mejor (${g.mejor.pct}%)</span> ·
+            <span class="text-state-ausente font-medium">${g.peor.dia} peor (${g.peor.pct}%)</span>
+          </div>
+        </div>
+      </div>
+      <div class="grid grid-cols-5 gap-3 mt-4">
+        ${g.por_dia.map(d => {
+          const px = Math.max(8, Math.round((d.pct / 100) * 56));
+          const isMax = d.dia === g.mejor.dia;
+          const isMin = d.dia === g.peor.dia;
+          return `
+            <div class="flex flex-col items-center gap-1.5">
+              <div class="text-[10px] font-semibold tabular-nums ${isMax ? 'text-state-presente' : isMin ? 'text-state-ausente' : 'text-muted-fg'}">${d.pct}%</div>
+              <div class="w-full h-14 flex items-end">
+                <div class="w-full rounded-md transition-all ${isMax ? 'bg-state-presente' : isMin ? 'bg-state-ausente' : 'bg-primary/70'}" style="height: ${px}px"></div>
+              </div>
+              <div class="text-[10px] text-muted-fg font-medium">${d.dia}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </section>
+
+    <!-- SESIONES (compact) -->
+    <section>
+      <div class="flex items-baseline justify-between mb-3">
+        <h2 class="text-base font-semibold tracking-tight">Sesiones recientes</h2>
+        <button class="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent-soft transition-colors">
+          ${ICONS.download}<span>CSV</span>
+        </button>
+      </div>
+      <div class="rounded-2xl bg-surface border border-border divide-y divide-border overflow-hidden">
+        ${HISTORICO.slice(0, 4).map(s => {
+          const isFestivo = s.total === 0;
+          const pct = s.total ? Math.round(((s.presente + s.tarde) / s.total) * 100) : 0;
+          return `
+          <button class="w-full text-left px-4 py-3 hover:bg-muted/30 transition-colors flex items-center gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="text-[13px] font-medium">${s.label}</div>
+              ${!isFestivo ? `
+                <div class="text-[10px] text-muted-fg mt-0.5 tabular-nums">
+                  ${s.presente}P · ${s.tarde}T · ${s.justificado}J · ${s.total - s.presente - s.tarde - s.justificado}A
+                </div>
+              ` : `<div class="text-[10px] text-muted-fg mt-0.5">sin sesión</div>`}
+            </div>
+            ${!isFestivo ? `
+              <div class="text-right">
+                <div class="text-sm font-bold tabular-nums">${pct}%</div>
+              </div>
+            ` : ''}
+            <span class="text-muted-fg/60 ml-1">${ICONS.chevron}</span>
+          </button>
+          `;
+        }).join('')}
+      </div>
+    </section>
+  </div>
+  `;
+};
+
+// ─────────── VIEW: AJUSTES ───────────
+VIEWS.ajustes = () => `
+  <div class="view-enter px-5 pt-5 pb-6 space-y-5">
+    <section>
+      <h3 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-fg mb-2 px-1">Conexión</h3>
+      <div class="rounded-2xl bg-surface border border-border divide-y divide-border overflow-hidden">
+        <div class="px-4 py-3">
+          <div class="text-[11px] font-medium uppercase tracking-wider text-muted-fg">Endpoint</div>
+          <div class="text-xs font-mono mt-1 break-all text-foreground/80">https://script.google.com/.../AKfycbwlIV3UdqYzKkyQPY-HjFLsXdsVfJEh53PiMaVTGAQ/dev</div>
+          <div class="mt-2 flex items-center gap-2">
+            <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-state-presente">
+              <span class="w-1.5 h-1.5 rounded-full bg-state-presente"></span>conectado
+            </span>
+            <button class="text-[11px] text-accent font-medium hover:underline ml-auto">cambiar</button>
+          </div>
+        </div>
+        <div class="px-4 py-3 flex items-center justify-between">
+          <div>
+            <div class="text-sm font-medium">Ficha del curso</div>
+            <div class="text-[11px] text-muted-fg">3145789 · ADSI · turno mañana</div>
+          </div>
+          <button class="text-[11px] font-semibold text-accent">cambiar</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h3 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-fg mb-2 px-1">Preferencias</h3>
+      <div class="rounded-2xl bg-surface border border-border divide-y divide-border overflow-hidden">
+        <label class="px-4 py-3 flex items-center justify-between cursor-pointer">
+          <div>
+            <div class="text-sm font-medium">Marcar "Tarde" después de</div>
+            <div class="text-[11px] text-muted-fg mt-0.5">Llegadas después de 07:15 cuentan como tarde</div>
+          </div>
+          <div class="text-sm font-mono font-semibold">07:15</div>
+        </label>
+        <label class="px-4 py-3 flex items-center justify-between cursor-pointer">
+          <div>
+            <div class="text-sm font-medium">Vibrar al escanear</div>
+          </div>
+          <div class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" checked class="sr-only peer">
+            <div class="w-10 h-6 bg-muted rounded-full peer peer-checked:bg-primary transition-colors"></div>
+            <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow-sm peer-checked:translate-x-4 transition-transform"></div>
+          </div>
+        </label>
+        <label class="px-4 py-3 flex items-center justify-between cursor-pointer">
+          <div>
+            <div class="text-sm font-medium">Modo offline</div>
+            <div class="text-[11px] text-muted-fg mt-0.5">Cola las marcas y sincroniza cuando vuelva la red</div>
+          </div>
+          <div class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" checked class="sr-only peer">
+            <div class="w-10 h-6 bg-muted rounded-full peer peer-checked:bg-primary transition-colors"></div>
+            <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow-sm peer-checked:translate-x-4 transition-transform"></div>
+          </div>
+        </label>
+      </div>
+    </section>
+
+    <section>
+      <h3 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-fg mb-2 px-1">Acerca de</h3>
+      <div class="rounded-2xl bg-surface border border-border p-5 text-xs text-muted-fg leading-relaxed">
+        Prototipo navegable de la PWA Asistencia · v0.1. Solo UI con datos mock —
+        ninguna acción persiste. Una vez aprobado el diseño, se conecta al backend
+        Apps Script existente.
+      </div>
+    </section>
+  </div>
+`;
+
+// ─────────── INIT ───────────
+window.addEventListener('hashchange', render);
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-nav]');
+  if (btn) {
+    e.preventDefault();
+    navigate(btn.dataset.nav);
+  }
+});
+if (!location.hash) location.hash = '#hoy';
+render();
+</script>
+
+</body>
+</html>

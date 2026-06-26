@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Test - Asistencia SENA</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f5; padding: 20px; }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  p { color: #666; margin-bottom: 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+  .card { background: #fff; border-radius: 16px; border: 3px solid #e5e5e5; padding: 24px; text-align: center; box-shadow: inset -2px -2px 8px rgba(0,0,0,0.08), 4px 4px 8px rgba(0,0,0,0.08); }
+  .card h2 { font-size: 16px; margin-bottom: 4px; }
+  .card .desc { font-size: 12px; color: #999; margin-bottom: 16px; }
+  .card .qr { display: flex; justify-content: center; margin-bottom: 12px; }
+  .card .label { font-size: 11px; color: #666; background: #f0f0f0; padding: 4px 8px; border-radius: 6px; font-family: monospace; word-break: break-all; }
+  .note { margin-top: 32px; padding: 16px; background: #eef2ff; border-radius: 12px; border: 3px solid #4F46E5; font-size: 14px; color: #333; }
+  .note strong { color: #4F46E5; }
+</style>
+</head>
+<body>
+  <h1>📷 QR Test — Asistencia SENA</h1>
+  <p>Apunta la cámara de la app a estos códigos para probar el escáner QR.</p>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Solo documento</h2>
+      <p class="desc">Formato: número de documento plano</p>
+      <div class="qr" id="qr-raw"></div>
+      <div class="label">1001234567</div>
+    </div>
+
+    <div class="card">
+      <h2>Key=Value</h2>
+      <p class="desc">Formato: documento=1001234567</p>
+      <div class="qr" id="qr-param"></div>
+      <div class="label">documento=1001234567</div>
+    </div>
+
+    <div class="card">
+      <h2>Con nombre</h2>
+      <p class="desc">Formato: documento + nombre + apellido</p>
+      <div class="qr" id="qr-full"></div>
+      <div class="label">documento=1001234567&amp;nombre=Juan&amp;apellido=Pérez</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>✅ Aprendiz:</strong> Juan Pérez · Documento: 1001234567 · Ficha: 2857520<br>
+    Abre la app en tu celular, ve a <strong>Escanear QR</strong> y prueba cada código.
+  </div>
+
+  <script>
+    const opts = { width: 200, height: 200, colorDark: '#4F46E5', colorLight: '#FFFFFF', correctLevel: QRCode.CorrectLevel.H };
+    new QRCode(document.getElementById('qr-raw'), { text: '1001234567', ...opts });
+    new QRCode(document.getElementById('qr-param'), { text: 'documento=1001234567', ...opts });
+    new QRCode(document.getElementById('qr-full'), { text: 'documento=1001234567&nombre=Juan&apellido=Pérez', ...opts });
+  </script>
+</body>
+</html>
