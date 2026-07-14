@@ -16,23 +16,25 @@ export function LoginPage() {
   }, [isAuthenticated, navigate, from])
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-green-100 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary to-primary-soft p-4">
       <div className="w-full max-w-md">
-        <div className="rounded-3xl bg-white p-8 shadow-lg shadow-green-500/10 backdrop-blur-sm">
+        <div className="rounded-xl bg-white px-8 py-10 shadow-xl shadow-primary/20">
           <div className="mb-8 text-center">
-            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-green-500">
-              <span className="text-3xl font-bold text-white">S</span>
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-800">Asistencia SENA</h1>
-            <p className="mt-2 text-gray-500">Gestión de asistencia para instructores</p>
+            <h1 className="text-xl font-semibold text-slate-900">Asistencia SENA</h1>
+            <p className="mt-1 text-sm text-slate-500">Gestión de asistencia para instructores</p>
           </div>
 
           {error && (
-            <div className="mb-4 rounded-xl bg-red-50 p-4 text-sm text-red-600">
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               <p>{error}</p>
               <button
                 onClick={clearError}
-                className="mt-2 text-xs font-medium text-red-500 underline"
+                className="mt-1 text-xs font-medium text-red-600 underline"
               >
                 Cerrar
               </button>
@@ -43,11 +45,11 @@ export function LoginPage() {
             onClick={signInWithGoogle}
             disabled={isLoading}
             aria-label="Iniciar sesión con Google"
-            className="flex w-full items-center justify-center gap-3 rounded-xl bg-white px-4 py-3 font-medium text-gray-700 shadow-md transition-all hover:shadow-lg disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-50"
           >
             {isLoading ? (
               <>
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-green-500" aria-hidden="true" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-primary" aria-hidden="true" />
                 <span>Cargando...</span>
               </>
             ) : (
@@ -75,7 +77,7 @@ export function LoginPage() {
             )}
           </button>
 
-          <p className="mt-6 text-center text-xs text-gray-400">
+          <p className="mt-6 text-center text-xs text-slate-400">
             Al continuar, aceptas los términos y condiciones
           </p>
         </div>

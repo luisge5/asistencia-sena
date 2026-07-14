@@ -26,6 +26,7 @@ export interface Aprendice {
   ficha: number
   centro: string
   estado: string
+  foto?: string
   created_at: string
   updated_at: string
 }

@@ -16,26 +16,31 @@
 
 | Campo                       | Valor                          |
 | --------------------------- | ------------------------------ |
-| **Fecha**                   | 2026-06-23                     |
-| **Sprint actual**           | S-05 (Lighthouse CI + Accesibilidad + Deploy) |
-| **Estado**                  | 🟢 En progreso                 |
-| **Última tarea completada** | —                               |
-| **Próximo sprint**          | S-06 (Realtime + Push)         |
+| **Fecha**                   | 2026-07-14                     |
+| **Sprint actual**           | S-06 (Realtime + Push)         |
+| **Estado**                  | ✅ MVP COMPLETADO               |
+| **Última tarea completada** | Deploy a Vercel                |
+| **URL Producción**          | https://dz4ng3wu.insforge.site |
+| **Próximo paso**            | Monitoreo y mantenimiento      |
 
 ---
 
 ## PROGRESO GENERAL
 
 ### Fases Completadas
-- Fase 0: Contexto inicial
-- Fase 1: Análisis del proyecto
-- Fase 2: Arquitectura y stack
-- Fase 3: Diseño detallado
-- Fase 4: Backlog y planificación
-- Fase 5: Ejecución (Sprint S-01)
-- Fase 6: Ejecución (Sprint S-02)
-- Fase 7: Ejecución (Sprint S-03)
-- Fase 8: Ejecución (Sprint S-04) ✅ Completo
+- Fase 0: Contexto inicial ✅
+- Fase 1: Análisis del proyecto ✅
+- Fase 2: Arquitectura y stack ✅
+- Fase 3: Diseño detallado ✅
+- Fase 4: Backlog y planificación ✅
+- Fase 5: Ejecución (Sprint S-01) ✅
+- Fase 6: Ejecución (Sprint S-02) ✅
+- Fase 7: Ejecución (Sprint S-03) ✅
+- Fase 8: Ejecución (Sprint S-04) ✅
+- Fase 9: Ejecución (Sprint S-05) ✅
+- Fase 10: Ejecución (Sprint S-06) ✅
+
+**MVP COMPLETADO** - 33 tareas, 6 sprints, todos los epics finalizados
 
 ### Archivos Creados
 - [x] `METODOLOGIA-AGENTE.md` — Metodología con prompts
@@ -48,14 +53,14 @@
 - `package.json` — Configuración del proyecto
 - `vite.config.ts` — Configuración de Vite + Tailwind + PWA
 - `tsconfig.app.json` — Configuración de TypeScript
-- `src/index.css` — Estilos con Tailwind CSS
+- `src/index.css` — Estilos con Tailwind CSS (rediseñado S-05: nuevo design system con colores primary #0F172A, accent #0369A1, animations fadeUp/scan, phone-frame layout)
 - `src/main.tsx` — Entry point con Router + QueryClient
 - `src/lib/insforge.ts` — Cliente InsForge
 - `src/lib/query.ts` — Configuración TanStack Query
 - `src/types/index.ts` — Tipos TypeScript globales
 - `src/stores/authStore.ts` — Zustand auth store
 - `src/shared/components/` — Componentes UI
-- `src/routes/index.tsx` — Configuración de rutas
+- `src/routes/index.tsx` — Configuración de rutas (actualizado S-05: /estadisticas redirect → /historial)
 - `.github/workflows/ci.yml` — GitHub Actions CI
 - `vercel.json` — Configuración de Vercel
 - `.env.local` — Variables de entorno
@@ -63,37 +68,42 @@
 ### Archivos del Proyecto (Sprint S-02)
 - `src/features/auth/services/authService.ts` — Servicio de autenticación InsForge
 - `src/features/auth/hooks/useAuth.ts` — Hook de autenticación
-- `src/features/auth/pages/LoginPage.tsx` — Página de login
+- `src/features/auth/pages/LoginPage.tsx` — Página de login (rediseñada S-05: gradient primary, logo SVG checkmark)
 - `src/features/auth/pages/LogoutPage.tsx` — Página de logout
 - `src/shared/components/ProtectedRoute.tsx` — Componente de protección de rutas
-- `src/features/hoy/pages/DashboardPage.tsx` — Página principal (Vista "Hoy")
-- `src/features/hoy/components/ContadorAsistencia.tsx` — Contadores de asistencia
-- `src/features/hoy/components/AprendizCard.tsx` — Tarjeta de aprendiz
+- `src/features/hoy/pages/DashboardPage.tsx` — Página principal — rediseñada S-05: hero card dark gradient, progress bar, faltantes con icon buttons, marcados con pills
 - `src/features/hoy/components/SkeletonCard.tsx` — Skeleton para loading
 - `src/features/asistencias/services/asistenciaService.ts` — Servicio de asistencia CRUD
 - `src/features/asistencias/hooks/useAsistencia.ts` — Hooks de asistencia con TanStack Query
 - `src/features/aprendices/services/aprendicesService.ts` — Servicio de aprendices CRUD
 - `src/features/aprendices/hooks/useAprendices.ts` — Hooks de aprendices con TanStack Query
-- `src/features/aprendices/pages/AprendicesPage.tsx` — Página de aprendices
+- `src/features/aprendices/pages/AprendicesPage.tsx` — Página de aprendices (rediseñada S-05: search + avatar list + filter pills)
 - `src/shared/components/MarcaRapida.tsx` — Componente de marca rápida
 
 ### Archivos del Proyecto (Sprint S-03)
 - `src/features/scan/services/qrScannerService.ts` — Servicio de escaneo QR
-- `src/features/scan/components/QRScanner.tsx` — Componente de escáner QR
-- `src/features/scan/pages/ScanPage.tsx` — Página de escaneo
+- `src/features/scan/components/QRScanner.tsx` — Componente de escáner QR (rediseñado S-05)
+- `src/features/scan/pages/ScanPage.tsx` — Página de escaneo (rediseñada S-05: viewfinder + scan-line + result card)
 - `src/features/scan/hooks/useQrLookup.ts` — Hook para buscar aprendiz por documento
 - `src/features/scan/hooks/useMarkAttendance.ts` — Hook para marcar asistencia
 - `src/features/aprendices/services/importService.ts` — Servicio de importación Excel
 - `src/features/aprendices/hooks/useImportAprendices.ts` — Hook de importación
 - `src/features/aprendices/pages/ImportPage.tsx` — Página de importación
 - `src/features/historial/hooks/useHistorial.ts` — Hook de historial
-- `src/features/historial/pages/HistorialPage.tsx` — Página de histórico
-- `src/features/estadisticas/hooks/useEstadisticas.ts` — Hook de estadísticas
-- `src/features/estadisticas/pages/EstadisticasPage.tsx` — Página de estadísticas
+- `src/features/historial/pages/HistorialPage.tsx` — Página de histórico (rediseñada S-05: analytics dashboard con KPIs, riesgo, tabla, patrones)
+- `src/features/estadisticas/hooks/useEstadisticas.ts` — Hook de estadísticas (no usado, redirect a /historial)
+- `src/features/estadisticas/pages/EstadisticasPage.tsx` — Página de estadísticas (redirect a /historial)
 - `src/shared/hooks/useOffline.ts` — Hook de modo offline
 - `src/shared/components/OfflineBanner.tsx` — Banner de offline
 
 ---
+
+### Shared components (rediseñados S-05)
+- `src/shared/components/Header.tsx` — Top bar: sticky backdrop-blur, checkmark icon, subtitle con fecha, logout button
+- `src/shared/components/Navigation.tsx` — Bottom nav: 4 tabs (Hoy, Escanear, Aprendices, Histórico) con icon + label + active dot, safe-area padding
+- `src/shared/components/MainLayout.tsx` — Phone-frame layout: max-w-[420px] centrado en desktop, full-bleed mobile, scroll-area sin scrollbar
+- `src/shared/components/Toast.tsx` — Toast dark inline: bg-primary, texto on-primary, undo link accent-soft, absolute bottom-24
+- `src/shared/components/OfflineBanner.tsx` — Banner offline (sin cambios)
 
 ## DECISIONES CLAVE TOMADAS
 
@@ -112,19 +122,24 @@
 > **Source of truth:** `docs/09-backlog.md`
 
 ### Sprint S-01
-15 tareas completadas (ver backlog)
+15 tareas completadas ✅
 
 ### Sprint S-02
-8 tareas completadas (ver backlog)
+8 tareas completadas ✅
 
 ### Sprint S-03
-5 tareas completadas (ver backlog)
+5 tareas completadas ✅
 
 ### Sprint S-04
-4 tareas completadas (ver backlog)
+4 tareas completadas ✅
 
-### Sprints futuros
-Ver backlog sección "Next" y "Later"
+### Sprint S-05
+5 tareas completadas ✅
+
+### Sprint S-06
+2 tareas completadas ✅
+
+**TOTAL: 33 tareas completadas en 6 sprints**
 
 ### UI/UX Design System (v2.5.0)
 - Skill instalada en `.opencode/skills/ui-ux-pro-max/`
@@ -230,4 +245,4 @@ npm run dev
 
 ---
 
-*Última actualización: 2026-06-12 (Backlog actualizado v2, regla automática agregada)*
+*Última actualización: 2026-07-14 (Sprint S-06 completado)*

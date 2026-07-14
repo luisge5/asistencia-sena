@@ -44,7 +44,14 @@ export function useImportAprendices(): UseImportAprendicesResult {
       return
     }
 
-    const { data: parsedData } = result.data
+    const { data: parsedData, missingColumns } = result.data
+
+    if (missingColumns.length > 0) {
+      setErrors([`Columnas requeridas no encontradas en el archivo: ${missingColumns.join(', ')}. Verifica los encabezados.`])
+      setIsLoading(false)
+      return
+    }
+
     const validation = importService.validateData(parsedData)
 
     setErrors(validation.errors)
@@ -65,37 +72,27 @@ export function useImportAprendices(): UseImportAprendicesResult {
     setImportProgress(0)
     setImportResult(null)
 
-    let successCount = 0
-    let errorCount = 0
+    const items = data.map(item => ({
+      nombre: item.nombre,
+      apellido: item.apellido,
+      documento: item.documento,
+      tipo_documento: item.tipo_documento,
+      ficha: item.ficha,
+      estado: item.estado,
+    }))
 
-    for (let i = 0; i < data.length; i++) {
-      const item = data[i]
-      const result = await aprendicesService.crearAprendice({
-        nombre: item.nombre,
-        apellido: item.apellido,
-        documento: item.documento,
-        tipo_documento: item.tipo_documento,
-        ficha: item.ficha,
-        centro: item.centro,
-        estado: item.estado,
-      })
+    const result = await aprendicesService.importarAprendices(items)
 
-      if (result.ok) {
-        successCount++
-      } else {
-        errorCount++
-      }
+    setImportProgress(100)
 
-      setImportProgress(Math.round(((i + 1) / data.length) * 100))
-    }
-
-    if (errorCount === 0) {
-      setImportResult({ ok: true, data: undefined })
+    if (result.ok) {
+      const { success, skipped } = result.data
+      const msg = skipped > 0
+        ? `${success} importados, ${skipped} duplicados omitidos`
+        : `${data.length} aprendices importados correctamente`
+      setImportResult({ ok: true, data: msg as unknown as void })
     } else {
-      setImportResult({
-        ok: false,
-        error: new Error(`${errorCount} registros fallaron, ${successCount} importados exitosamente`),
-      })
+      setImportResult(result)
     }
 
     setIsImporting(false)

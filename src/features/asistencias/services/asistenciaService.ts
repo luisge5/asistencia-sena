@@ -19,6 +19,32 @@ interface ActualizarAsistenciaParams {
 
 export const asistenciaService = {
   async registrarAsistencia(params: RegistrarAsistenciaParams): Promise<Result<Asistencia>> {
+    const { data: existing } = await insforge.database
+      .from('asistencias')
+      .select('id')
+      .eq('aprendiz_id', params.aprendiz_id)
+      .eq('fecha', params.fecha)
+      .maybeSingle()
+
+    if (existing) {
+      const { data, error } = await insforge.database
+        .from('asistencias')
+        .update({
+          estado: params.estado,
+          hora_entrada: params.hora_entrada,
+          instructor_id: params.instructor_id,
+        })
+        .eq('id', existing.id)
+        .select()
+        .single()
+
+      if (error) {
+        return { ok: false, error }
+      }
+
+      return { ok: true, data }
+    }
+
     const { data, error } = await insforge.database
       .from('asistencias')
       .insert({

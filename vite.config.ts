@@ -40,6 +40,25 @@ export default defineConfig({
           },
         ],
       },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/api\.insforge\.dev\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'insforge-api',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60,
+              },
+            },
+          },
+        ],
+      },
+      devOptions: {
+        enabled: false,
+      },
     }),
   ],
   resolve: {

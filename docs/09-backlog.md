@@ -1,14 +1,14 @@
 ---
 backlog_version: 2
 generated: 2026-05-23
-  last_updated: 2026-06-23 (Sprint S-05 iniciado)
-current_sprint: S-05 (Lighthouse CI + Accesibilidad + Deploy)
+  last_updated: 2026-07-14 (Sprint S-06 en progreso)
+current_sprint: S-06 (Realtime + Push)
 owner: jjzoto (single dev)
 totals:
-   todo: 4
+   todo: 0
    wip: 0
-  blocked: 0
-  done: 29
+   blocked: 0
+   done: 33
   deferred: 0
   cancelled: 0
 phase: 1
@@ -129,7 +129,7 @@ stack:
 ---
 
 ### S-05-003: Deploy a Vercel
-**Status:** `wip`
+**Status:** `done`
 **Estimation:** S
 **Parent epic:** E5.3 — Deploy
 
@@ -141,23 +141,51 @@ stack:
 ---
 
 ### S-05-004: Validación responsive en Android real
-**Status:** `todo`
+**Status:** `done`
+**Completed:** 2026-07-14
 **Estimation:** S
 **Parent epic:** E5.4 — QA
 
 **Acceptance criteria:**
-- [ ] Probar en dispositivo Android físico
-- [ ] Ajustar layout si es necesario
-- [ ] Verificar escáner QR en móvil
+- [x] Probar en dispositivo Android físico
+- [x] Ajustar layout si es necesario
+- [x] Verificar escáner QR en móvil
 
 ---
 
-## Later · queue
+## Now · current sprint (S-06)
 
-> Stories sin sprint asignado todavía.
+> Stories que vamos a trabajar este sprint. Owner: jjzoto.
 
-- S-06-001: Realtime sync — suscripción a cambios en tiempo real vía WebSockets
-- S-06-002: Push notifications — notificaciones cuando instructor marca asistencia
+### S-06-001: Realtime sync — suscripción a cambios en tiempo real vía WebSockets
+**Status:** `done`
+**Completed:** 2026-07-14
+**Estimation:** M
+**Parent epic:** E6.1 — Realtime
+
+**Acceptance criteria:**
+- [x] Hook useRealtime implementado
+- [x] DashboardPage actualiza en tiempo real
+- [x] Documentación SQL trigger creada
+- [x] Build sin errores TypeScript
+
+---
+
+### S-06-002: Push notifications — notificaciones cuando instructor marca asistencia
+**Status:** `done`
+**Completed:** 2026-07-14
+**Estimation:** M
+**Parent epic:** E6.2 — Push Notifications
+
+**Acceptance criteria:**
+- [x] Solicitar permiso de notificaciones
+- [x] Registrar subscription en backend
+- [x] Enviar notificación cuando se marca asistencia
+- [x] Manejar notificación en background
+
+---
+
+> ✅ Sprint S-06 completado exitosamente
 
 ---
 
@@ -173,7 +201,22 @@ stack:
 
 > Stories que surgieron durante implementación o uso real, no en el PRD original.
 
-(none yet — esta sección se llenará durante el desarrollo)
+- ✅ **S-05-005: Rediseño UI profesional** — 2026-07-01
+  Rediseño completo siguiendo `docs/referencia/prototipo-pwa.html`:
+  - Phone-frame layout (max-w-420px en desktop)
+  - Bottom navigation (4 tabs, icon+label+dot)
+  - Top bar sticky con backdrop-blur
+  - Hero card dark gradient con progress bar
+  - Dashboard: faltantes con icon buttons + marcados con pills
+  - QR scanner: viewfinder con scanner-frame corners + scan-line
+  - Historial→Analytics dashboard con KPIs, riesgo, tabla, patrones
+  - Paleta: primary #0F172A, accent #0369A1, estados semánticos
+  - Tipografía Inter, SVGs Lucide
+  - Toast dark inline (bg-primary, undo link)
+  - Login gradient primary, logo SVG checkmark
+  - Aprendices: search + avatar list + filter tabs
+  - /estadisticas redirect → /historial
+  - Build limpio sin errores TS
 
 ---
 
@@ -251,6 +294,16 @@ stack:
 **Stories:** S-04-004
 **Status:** ✅ done
 
+### Epic E6.1 — Realtime
+**Goal:** Sincronización en tiempo real vía WebSockets.
+**Stories:** S-06-001
+**Status:** ✅ done
+
+### Epic E6.2 — Push Notifications
+**Goal:** Notificaciones push para actualizaciones de asistencia.
+**Stories:** S-06-002
+**Status:** ✅ done
+
 ---
 
 ## Working agreements
@@ -298,3 +351,7 @@ stack:
 - **2026-05-23** — Initial backlog generated (Apps Script version)
 - **2026-06-11** — Sprint S-01 completado: Setup + Core (12 tareas)
 - **2026-06-12** — Backlog actualizado v2: Nueva arquitectura InsForge + React + TypeScript
+- **2026-07-01** — Rediseño UI profesional S-05-005 completado (ver Discovered work)
+- **2026-07-14** — Sprint S-05 completado: Lighthouse CI + Accesibilidad + Deploy + Rediseño UI
+- **2026-07-14** — Sprint S-06 completado: Realtime sync + Push notifications
+- **2026-07-14** — MVP completado: Tests E2E, SQL Triggers, VAPID Keys, Deploy a Vercel

@@ -1,28 +1,18 @@
 export function SkeletonCard() {
   return (
-    <div
-      className="animate-pulse overflow-hidden rounded-2xl border-4 border-gray-200 p-4"
-      style={{
-        background: 'linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%)',
-        boxShadow: 'inset -2px -2px 8px rgba(0, 0, 0, 0.05), 4px 4px 8px rgba(0, 0, 0, 0.05)',
-      }}
-    >
-      <div className="flex items-center gap-4">
-        {/* Avatar skeleton */}
-        <div className="h-14 w-14 rounded-full bg-gray-300" />
-
-        {/* Info skeleton */}
+    <div className="animate-pulse rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-full bg-slate-200" />
         <div className="flex-1 space-y-2">
-          <div className="h-4 w-3/4 rounded-full bg-gray-300" />
-          <div className="h-3 w-1/2 rounded-full bg-gray-300" />
+          <div className="h-3 w-3/4 rounded bg-slate-200" />
+          <div className="h-2.5 w-1/2 rounded bg-slate-200" />
         </div>
       </div>
 
-      {/* Buttons skeleton */}
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        <div className="h-10 rounded-xl bg-gray-300" />
-        <div className="h-10 rounded-xl bg-gray-300" />
-        <div className="h-10 rounded-xl bg-gray-300" />
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="h-8 rounded-md bg-slate-200" />
+        <div className="h-8 rounded-md bg-slate-200" />
+        <div className="h-8 rounded-md bg-slate-200" />
       </div>
     </div>
   )

@@ -1,19 +1,24 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { MainLayout } from '@/shared/components/MainLayout'
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
+import { MiCarnetPage } from '@/features/aprendices/pages/MiCarnetPage'
 import { LogoutPage } from '@/features/auth/pages/LogoutPage'
 import { DashboardPage } from '@/features/hoy/pages/DashboardPage'
 import { AprendicesPage } from '@/features/aprendices/pages/AprendicesPage'
 import { ImportPage } from '@/features/aprendices/pages/ImportPage'
+import { CarnetsPage } from '@/features/aprendices/pages/CarnetsPage'
 import { ScanPage } from '@/features/scan/pages/ScanPage'
 import { HistorialPage } from '@/features/historial/pages/HistorialPage'
-import { EstadisticasPage } from '@/features/estadisticas/pages/EstadisticasPage'
 
 export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: '/mi-carnet',
+    element: <MiCarnetPage />,
   },
   {
     path: '/logout',
@@ -60,6 +65,16 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: '/aprendices/carnets',
+    element: (
+      <ProtectedRoute>
+        <MainLayout>
+          <CarnetsPage />
+        </MainLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/historial',
     element: (
       <ProtectedRoute>
@@ -71,12 +86,6 @@ export const router = createBrowserRouter([
   },
   {
     path: '/estadisticas',
-    element: (
-      <ProtectedRoute>
-        <MainLayout>
-          <EstadisticasPage />
-        </MainLayout>
-      </ProtectedRoute>
-    ),
+    element: <Navigate to="/historial" replace />,
   },
 ])

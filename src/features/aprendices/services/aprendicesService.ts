@@ -23,7 +23,60 @@ interface BuscarAprendicesParams {
   offset?: number
 }
 
+interface ImportarAprendicesParams {
+  nombre: string
+  apellido: string
+  documento: string
+  tipo_documento: string
+  ficha: number
+  estado: string
+}
+
 export const aprendicesService = {
+  async importarAprendices(items: ImportarAprendicesParams[]): Promise<Result<{ success: number; skipped: number; errors: number }>> {
+    let allExisting: string[] = []
+    let offset = 0
+    const PAGE = 1000
+
+    while (true) {
+      const { data, error } = await insforge.database
+        .from('aprendices')
+        .select('documento')
+        .range(offset, offset + PAGE - 1)
+
+      if (error) return { ok: false, error }
+      if (!data || data.length === 0) break
+
+      allExisting = allExisting.concat(data.map(d => d.documento))
+      offset += PAGE
+      if (data.length < PAGE) break
+    }
+
+    const existingSet = new Set(allExisting)
+    const newItems = items.filter(item => !existingSet.has(item.documento))
+    const skipped = items.length - newItems.length
+
+    let success = 0
+    let errors = 0
+    const BATCH_SIZE = 100
+
+    for (let i = 0; i < newItems.length; i += BATCH_SIZE) {
+      const batch = newItems.slice(i, i + BATCH_SIZE)
+      const { error } = await insforge.database
+        .from('aprendices')
+        .insert(batch)
+        .select()
+
+      if (error) {
+        errors += batch.length
+      } else {
+        success += batch.length
+      }
+    }
+
+    return { ok: true, data: { success, skipped, errors } }
+  },
+
   async crearAprendice(params: CrearAprendiceParams): Promise<Result<Aprendice>> {
     const { data, error } = await insforge.database
       .from('aprendices')

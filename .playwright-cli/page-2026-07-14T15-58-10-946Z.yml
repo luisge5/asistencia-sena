@@ -1,0 +1,8 @@
+- generic [ref=f7e5]:
+  - generic [ref=f7e6]:
+    - img [ref=f7e8]
+    - heading "Asistencia SENA" [level=1] [ref=f7e10]
+    - paragraph [ref=f7e11]: Gestión de asistencia para instructores
+  - button "Iniciar sesión con Google" [disabled] [ref=f7e12]:
+    - generic [ref=f7e14]: Cargando...
+  - paragraph [ref=f7e15]: Al continuar, aceptas los términos y condiciones

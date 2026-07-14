@@ -20,16 +20,6 @@
               "icon": "lucide-file",
               "title": "curso de  proyectos ia"
             }
-          },
-          {
-            "id": "e35fba86c47f0f3c",
-            "type": "leaf",
-            "state": {
-              "type": "empty",
-              "state": {},
-              "icon": "lucide-file",
-              "title": "Nueva pestaña"
-            }
           }
         ]
       }
@@ -195,12 +185,21 @@
   },
   "active": "2b6d2aa9148d2438",
   "lastOpenFiles": [
+    "realtime-setup.md",
+    "curso de  proyectos ia.md",
+    "data/~$base de datos .xlsx",
+    "~$base de datos .xlsx",
+    "data/base de datos .xlsx",
+    "base de datos .xlsx",
+    "data/~$BaseRA.xlsx",
+    "data/BaseRA.xlsx",
+    "data",
+    "Nueva carpeta",
     "09-backlog.md",
     "database/schema.sql",
     "database",
     "MEMORY.md",
     "AGENTS.md",
-    "curso de  proyectos ia.md",
     "CONTEXTO-PROYECTO.md",
     "00-project-brief.md"
   ]

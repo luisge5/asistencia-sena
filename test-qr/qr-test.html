@@ -24,6 +24,14 @@
   <h1>📷 QR Test — Asistencia SENA</h1>
   <p>Apunta la cámara de la app a estos códigos para probar el escáner QR.</p>
 
+  <div style="margin-bottom:20px;padding:16px;background:#eef2ff;border:3px solid #4F46E5;border-radius:12px;text-align:center;">
+    <strong style="color:#4F46E5;font-size:18px;">🔗 App en Vercel</strong>
+    <div id="qr-vercel" style="display:flex;justify-content:center;margin:12px 0;"></div>
+    <div style="font-size:12px;color:#666;word-break:break-all;">https://asistencia-sena-luisge5-luige.vercel.app</div>
+  </div>
+
+  <h2 style="font-size:18px;margin-bottom:12px;">QR de prueba para escáner</h2>
+
   <div class="grid">
     <div class="card">
       <h2>Solo documento</h2>
@@ -57,6 +65,7 @@
     new QRCode(document.getElementById('qr-raw'), { text: '1001234567', ...opts });
     new QRCode(document.getElementById('qr-param'), { text: 'documento=1001234567', ...opts });
     new QRCode(document.getElementById('qr-full'), { text: 'documento=1001234567&nombre=Juan&apellido=Pérez', ...opts });
+    new QRCode(document.getElementById('qr-vercel'), { text: 'https://asistencia-sena-luisge5-luige.vercel.app', ...opts });
   </script>
 </body>
 </html>

@@ -7,9 +7,10 @@ test.describe('CUJ-5: Ver estadísticas', () => {
     await setupAuth(page)
   })
 
-  test('navega a la página de estadísticas', async ({ page }) => {
+  test('navega a la página de estadísticas redirige a historial', async ({ page }) => {
     await page.goto('/estadisticas')
     await page.waitForLoadState('networkidle')
-    await expect(page.locator('h1').filter({ hasText: 'Estadísticas' }).first()).toBeVisible()
+    await expect(page).toHaveURL(/\/historial/)
+    await expect(page.getByText('Asistencia del grupo')).toBeVisible()
   })
 })
