@@ -9,11 +9,15 @@ export function useAuth() {
 
   useEffect(() => {
     const initAuth = async () => {
+      if (user?.id?.startsWith('demo-')) {
+        setLoading(false)
+        return
+      }
+
       setLoading(true)
       const result = await authService.getCurrentUser()
 
       if (result.ok && result.data) {
-        // Fetch user role from user_roles table
         const { data: roleData } = await insforge.database
           .from('user_roles')
           .select('rol, ficha_asignada, centro')
@@ -39,7 +43,7 @@ export function useAuth() {
     }
 
     initAuth()
-  }, [login, logout, setLoading])
+  }, [login, logout, setLoading, user?.id])
 
   const signInWithGoogle = async () => {
     setLoading(true)
