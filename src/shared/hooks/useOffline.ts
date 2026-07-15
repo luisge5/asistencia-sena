@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 interface OfflineQueueItem {
   id: string
@@ -17,20 +17,26 @@ interface UseOfflineResult {
 
 const QUEUE_KEY = 'asistencia_offline_queue'
 
+function loadQueueFromStorage(): OfflineQueueItem[] {
+  try {
+    const saved = localStorage.getItem(QUEUE_KEY)
+    return saved ? JSON.parse(saved) : []
+  } catch {
+    localStorage.removeItem(QUEUE_KEY)
+    return []
+  }
+}
+
 export function useOffline(): UseOfflineResult {
   const [isOnline, setIsOnline] = useState(navigator.onLine)
-  const [queue, setQueue] = useState<OfflineQueueItem[]>([])
+  const [queue, setQueue] = useState<OfflineQueueItem[]>(loadQueueFromStorage)
+  const queueRef = useRef(queue)
 
   useEffect(() => {
-    const savedQueue = localStorage.getItem(QUEUE_KEY)
-    if (savedQueue) {
-      try {
-        setQueue(JSON.parse(savedQueue))
-      } catch {
-        localStorage.removeItem(QUEUE_KEY)
-      }
-    }
+    queueRef.current = queue
+  }, [queue])
 
+  useEffect(() => {
     const handleOnline = () => setIsOnline(true)
     const handleOffline = () => setIsOnline(false)
 
@@ -47,25 +53,11 @@ export function useOffline(): UseOfflineResult {
     localStorage.setItem(QUEUE_KEY, JSON.stringify(queue))
   }, [queue])
 
-  useEffect(() => {
-    if (isOnline && queue.length > 0) {
-      processQueue()
-    }
-  }, [isOnline])
-
-  const addToQueue = useCallback((item: Omit<OfflineQueueItem, 'id' | 'timestamp'>) => {
-    const newItem: OfflineQueueItem = {
-      ...item,
-      id: crypto.randomUUID(),
-      timestamp: Date.now(),
-    }
-    setQueue(prev => [...prev, newItem])
-  }, [])
-
   const processQueue = useCallback(async () => {
-    if (queue.length === 0) return
+    const currentQueue = queueRef.current
+    if (currentQueue.length === 0) return
 
-    const itemsToProcess = [...queue]
+    const itemsToProcess = [...currentQueue]
     setQueue([])
 
     for (const item of itemsToProcess) {
@@ -76,7 +68,22 @@ export function useOffline(): UseOfflineResult {
         setQueue(prev => [...prev, item])
       }
     }
-  }, [queue])
+  }, [])
+
+  useEffect(() => {
+    if (isOnline && queue.length > 0) {
+      void processQueue()
+    }
+  }, [isOnline, queue.length, processQueue])
+
+  const addToQueue = useCallback((item: Omit<OfflineQueueItem, 'id' | 'timestamp'>) => {
+    const newItem: OfflineQueueItem = {
+      ...item,
+      id: crypto.randomUUID(),
+      timestamp: Date.now(),
+    }
+    setQueue(prev => [...prev, newItem])
+  }, [])
 
   const clearQueue = useCallback(() => {
     setQueue([])

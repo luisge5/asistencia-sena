@@ -110,17 +110,12 @@ export const importService = {
             record[header] = row[i]
           })
 
-          let nombre = ''
-          let apellido = ''
-
-          if (record.aprendiz_raw) {
-            const split = splitFullName(String(record.aprendiz_raw))
-            nombre = split.nombre
-            apellido = split.apellido
-          } else {
-            nombre = String(record.nombre || '').trim()
-            apellido = String(record.apellido || '').trim()
-          }
+          const { nombre, apellido } = record.aprendiz_raw
+            ? splitFullName(String(record.aprendiz_raw))
+            : {
+                nombre: String(record.nombre || '').trim(),
+                apellido: String(record.apellido || '').trim(),
+              }
 
           return {
             nombre,

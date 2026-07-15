@@ -13,7 +13,10 @@ export function useRealtimeAsistencias(
   callback: (payload: RealtimePayload) => void
 ) {
   const callbackRef = useRef(callback)
-  callbackRef.current = callback
+
+  useEffect(() => {
+    callbackRef.current = callback
+  }, [callback])
 
   const channelName = `asistencias:ficha:${ficha}`
 
@@ -65,7 +68,10 @@ export function useRealtimeAprendices(
   callback: () => void
 ) {
   const callbackRef = useRef(callback)
-  callbackRef.current = callback
+
+  useEffect(() => {
+    callbackRef.current = callback
+  }, [callback])
 
   const channelName = `aprendices:ficha:${ficha}`
 

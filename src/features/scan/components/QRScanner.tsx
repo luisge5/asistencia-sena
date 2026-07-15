@@ -15,7 +15,7 @@ export function QRScanner({
   const [isScanning, setIsScanning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const scannerId = useRef(`qr-scanner-${Math.random().toString(36).slice(2, 9)}`).current
+  const [scannerId] = useState(() => `qr-scanner-${Math.random().toString(36).slice(2, 9)}`)
 
   useEffect(() => {
     let mounted = true

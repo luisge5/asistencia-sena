@@ -30,10 +30,10 @@ export function useHistorial(): UseHistorialResult {
   const [asistencias, setAsistencias] = useState<Asistencia[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [filters, setFilters] = useState<HistorialFilters>({
+  const [filters, setFilters] = useState<HistorialFilters>(() => ({
     fechaInicio: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     fechaFin: new Date().toISOString().split('T')[0],
-  })
+  }))
 
   const ficha = user?.ficha_asignada ?? 0
 

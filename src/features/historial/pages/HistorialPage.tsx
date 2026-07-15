@@ -48,7 +48,7 @@ export function HistorialPage() {
     return { total, presente, tarde, justificado, ausente, pct, rachaAusente, ausenciasDiscontinuas, enRiesgo, dias_validos, asistio }
   }
 
-  let lista = aprendices.map(a => ({
+  const lista = aprendices.map(a => ({
     ...a,
     stats: computeLearnerStats(a.id),
   }))

@@ -50,14 +50,13 @@ export function ScanPage() {
     }
 
     const decodedText = result.decodedText
-    let documento: string | null = null
 
-    if (decodedText.startsWith('SENA:')) {
-      documento = decodedText.slice(5).trim()
-    } else {
-      const parsed = qrScannerService.parseQrData(decodedText)
-      documento = parsed.ok ? parsed.data.documento || parsed.data.doc || parsed.data.raw : decodedText
-    }
+    const documento = decodedText.startsWith('SENA:')
+      ? decodedText.slice(5).trim()
+      : (() => {
+          const parsed = qrScannerService.parseQrData(decodedText)
+          return parsed.ok ? parsed.data.documento || parsed.data.doc || parsed.data.raw : decodedText
+        })()
 
     if (documento) {
       try {
@@ -91,9 +90,9 @@ export function ScanPage() {
         setLookupError('Error al buscar aprendiz')
       }
     }
-  }, [user, doAutoMark])
+  }, [user, doAutoMark, clearMark])
 
-  const handleScanError = useCallback((_error: string) => {
+  const handleScanError = useCallback(() => {
     // silent
   }, [])
 
