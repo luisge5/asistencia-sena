@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { QRScanner } from '../components/QRScanner'
 import { qrScannerService, type QrScanResult } from '../services/qrScannerService'
 import { useMarkAttendance } from '../hooks/useMarkAttendance'
@@ -13,6 +13,7 @@ export function ScanPage() {
   const [lookupError, setLookupError] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const lastScanRef = useRef(0)
+  const processingRef = useRef(false)
 
   const user = useAuthStore((state) => state.user)
   const { addToast } = useToastStore()
@@ -23,10 +24,22 @@ export function ScanPage() {
     centro: user?.centro || '',
   })
 
+  useEffect(() => {
+    if (asistencia && lastAprendiz) {
+      const timer = setTimeout(() => {
+        setLastAprendiz(null)
+        clearMark()
+      }, 2500)
+      return () => clearTimeout(timer)
+    }
+  }, [asistencia, lastAprendiz, clearMark])
+
   const handleScanSuccess = useCallback(async (result: QrScanResult) => {
     const now = Date.now()
-    if (now - lastScanRef.current < 1500) return
+    if (now - lastScanRef.current < 500) return
+    if (processingRef.current) return
     lastScanRef.current = now
+    processingRef.current = true
 
     setLookupError(null)
     setLastAprendiz(null)
@@ -34,7 +47,7 @@ export function ScanPage() {
     setIsProcessing(true)
 
     if ('vibrate' in navigator) {
-      navigator.vibrate(50)
+      navigator.vibrate(30)
     }
 
     const decodedText = result.decodedText
@@ -49,6 +62,7 @@ export function ScanPage() {
     if (!documento) {
       setLookupError('No se pudo leer el documento')
       setIsProcessing(false)
+      processingRef.current = false
       return
     }
 
@@ -56,62 +70,58 @@ export function ScanPage() {
       const isSenaQr = decodedText.startsWith('SENA:')
       let query = insforge.database
         .from('aprendices')
-        .select('*')
+        .select('id,nombre,apellido,documento,ficha,centro')
         .eq('documento', documento)
 
       if (!isSenaQr && user?.ficha_asignada) {
         query = query.eq('ficha', user.ficha_asignada)
       }
 
-      const { data: aprendices } = await query.limit(1)
+      const { data: aprendices } = await query.limit(1).single()
 
-      if (!aprendices || aprendices.length === 0) {
+      if (!aprendices) {
         setLookupError('Aprendiz no encontrado')
         setIsProcessing(false)
+        processingRef.current = false
         return
       }
 
-      const aprendiz = aprendices[0] as unknown as Aprendice
+      const aprendiz = aprendices as unknown as Aprendice
       setLastAprendiz(aprendiz)
 
       const result = await markAttendance(aprendiz.id, 'P')
 
       setIsProcessing(false)
+      processingRef.current = false
 
       if (result.ok) {
         if ('vibrate' in navigator) {
-          navigator.vibrate([100, 50, 100])
+          navigator.vibrate([50, 30, 50])
         }
         addToast({
-          message: `✓ ${aprendiz.nombre} ${aprendiz.apellido} — Presente`,
+          message: `✓ ${aprendiz.nombre} ${aprendiz.apellido}`,
           type: 'success',
+          duration: 2000,
         })
         sendNotification(
-          'Asistencia Registrada',
-          `${aprendiz.nombre} ${aprendiz.apellido} marcado como presente`,
+          'Asistencia',
+          `${aprendiz.nombre} ${aprendiz.apellido} — Presente`,
           '/'
         )
       } else {
         addToast({
-          message: 'Error al registrar asistencia',
+          message: 'Error al registrar',
           type: 'error',
         })
       }
     } catch {
       setLookupError('Error al buscar aprendiz')
       setIsProcessing(false)
+      processingRef.current = false
     }
   }, [user, markAttendance, addToast, sendNotification, clearMark])
 
-  const handleScanError = useCallback(() => {
-    // silent
-  }, [])
-
-  const handleContinue = () => {
-    setLastAprendiz(null)
-    setLookupError(null)
-    clearMark()
-  }
+  const handleScanError = useCallback(() => {}, [])
 
   return (
     <div className="view-enter px-5 pt-5 pb-6 space-y-5">
@@ -133,8 +143,8 @@ export function ScanPage() {
       {isProcessing && (
         <section className="rounded-2xl bg-surface border border-border p-4 text-center view-enter">
           <div className="inline-flex items-center gap-3">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <span className="text-sm text-muted-fg">Registrando asistencia...</span>
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <span className="text-sm text-muted-fg">Registrando...</span>
           </div>
         </section>
       )}
@@ -143,61 +153,26 @@ export function ScanPage() {
         <section className="rounded-2xl bg-surface border border-border p-4 view-enter">
           <div className="text-center">
             <div className="font-medium text-sm text-state-ausente">{lookupError}</div>
-            <button
-              onClick={handleContinue}
-              className="mt-3 h-11 px-6 rounded-xl bg-primary text-on-primary text-sm font-semibold active:scale-[0.98] transition-transform cursor-pointer"
-            >
-              Escanear otro
-            </button>
           </div>
         </section>
       )}
 
       {markError && (
         <section className="rounded-2xl bg-surface border border-border p-4 view-enter">
-          <div className="text-center">
-            <div className="rounded-lg bg-state-ausente-bg text-state-ausente text-sm p-3">{markError}</div>
-            <button
-              onClick={handleContinue}
-              className="mt-3 w-full h-11 rounded-xl border border-border bg-surface text-sm font-medium text-muted-fg hover:bg-muted transition-colors cursor-pointer"
-            >
-              Escanear otro
-            </button>
-          </div>
+          <div className="rounded-lg bg-state-ausente-bg text-state-ausente text-sm p-3 text-center">{markError}</div>
         </section>
       )}
 
       {asistencia && lastAprendiz && (
-        <section className="rounded-2xl bg-surface border border-border overflow-hidden view-enter">
-          <div className="px-4 py-3 border-b border-border bg-muted/40">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-fg">
-              Asistencia registrada
-            </div>
+        <section className="rounded-2xl bg-state-presente-bg border border-state-presente/20 p-4 text-center view-enter">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-state-presente">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <span className="font-semibold text-state-presente">Registrado</span>
           </div>
-          <div className="p-4">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="shrink-0 w-14 h-14 rounded-full bg-state-presente-bg flex items-center justify-center">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-state-presente">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-[15px] truncate">{lastAprendiz.nombre} {lastAprendiz.apellido}</div>
-                <div className="text-xs text-muted-fg tabular-nums">{lastAprendiz.ficha} · doc {lastAprendiz.documento}</div>
-              </div>
-            </div>
-            <div className="flex items-center justify-center gap-2 text-sm text-state-presente font-semibold mb-4">
-              <span>Presente</span>
-              <span className="text-muted-fg">—</span>
-              <span className="tabular-nums">{asistencia.hora_entrada}</span>
-            </div>
-            <button
-              onClick={handleContinue}
-              className="w-full h-11 rounded-xl bg-primary text-on-primary text-sm font-semibold active:scale-[0.98] transition-transform cursor-pointer"
-            >
-              Escanear otro
-            </button>
-          </div>
+          <div className="font-semibold text-sm">{lastAprendiz.nombre} {lastAprendiz.apellido}</div>
+          <div className="text-xs text-muted-fg tabular-nums mt-1">{asistencia.hora_entrada}</div>
         </section>
       )}
 
@@ -209,8 +184,8 @@ export function ScanPage() {
               <rect x="3" y="14" width="7" height="7" rx="1" /><path d="M14 14h3v3h-3z" /><path d="M20 14v3" /><path d="M17 20h4" /><path d="M14 20v1" />
             </svg>
           </div>
-          <div className="text-sm font-medium">Sin lecturas todavía</div>
-          <div className="text-xs text-muted-fg mt-1 leading-relaxed">Apunta la cámara al código QR<br />del aprendiz para registrar</div>
+          <div className="text-sm font-medium">Sin lecturas</div>
+          <div className="text-xs text-muted-fg mt-1">Apunta al QR para registrar</div>
         </section>
       )}
     </div>
