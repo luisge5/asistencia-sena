@@ -21,6 +21,8 @@ export function LoginPage() {
   const handleDemoLogin = (rol: 'instructor' | 'aprendiz') => {
     setDemoLoading(true)
     
+    localStorage.clear()
+    
     const demoUser = rol === 'instructor' ? {
       id: 'demo-instructor-001',
       email: 'instructor.demo@sena.edu.co',
@@ -134,6 +136,16 @@ export function LoginPage() {
           <p className="mt-6 text-center text-xs text-slate-400">
             Modo demo: acceso directo sin autenticación
           </p>
+          
+          <button
+            onClick={() => {
+              localStorage.clear()
+              window.location.reload()
+            }}
+            className="mt-4 w-full text-center text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
+          >
+            ¿Problemas? Limpiar sesión
+          </button>
         </div>
       </div>
     </div>
