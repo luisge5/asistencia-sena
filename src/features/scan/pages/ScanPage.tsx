@@ -9,41 +9,29 @@ import { useToastStore } from '@/shared/stores/toastStore'
 import type { Aprendice } from '@/types'
 
 export function ScanPage() {
-  const [scannedAprendiz, setScannedAprendiz] = useState<Aprendice | null>(null)
+  const [lastAprendiz, setLastAprendiz] = useState<Aprendice | null>(null)
   const [lookupError, setLookupError] = useState<string | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
   const lastScanRef = useRef(0)
 
   const user = useAuthStore((state) => state.user)
   const { addToast } = useToastStore()
   const { sendNotification } = usePushNotifications()
-  const { asistencia, isLoading: isMarking, error: markError, markAttendance, clearResult: clearMark } = useMarkAttendance({
+  const { asistencia, error: markError, markAttendance, clearResult: clearMark } = useMarkAttendance({
     instructorId: user?.id || '',
     ficha: user?.ficha_asignada || 0,
     centro: user?.centro || '',
   })
 
-  const doAutoMark = useCallback(async (aprendiz: Aprendice) => {
-    const result = await markAttendance(aprendiz.id, 'P')
-    if (result.ok) {
-      addToast({
-        message: `✓ ${aprendiz.nombre} ${aprendiz.apellido} — Presente`,
-        type: 'success',
-      })
-      sendNotification(
-        'Asistencia Registrada',
-        `${aprendiz.nombre} ${aprendiz.apellido} marcado como presente`,
-        '/'
-      )
-    }
-  }, [markAttendance, addToast, sendNotification])
-
   const handleScanSuccess = useCallback(async (result: QrScanResult) => {
     const now = Date.now()
-    if (now - lastScanRef.current < 800) return
+    if (now - lastScanRef.current < 1500) return
     lastScanRef.current = now
 
     setLookupError(null)
-    setScannedAprendiz(null)
+    setLastAprendiz(null)
+    clearMark()
+    setIsProcessing(true)
 
     if ('vibrate' in navigator) {
       navigator.vibrate(50)
@@ -58,77 +46,71 @@ export function ScanPage() {
           return parsed.ok ? parsed.data.documento || parsed.data.doc || parsed.data.raw : decodedText
         })()
 
-    if (documento) {
-      try {
-        const isSenaQr = decodedText.startsWith('SENA:')
-        let query = insforge.database
-          .from('aprendices')
-          .select('*')
-          .eq('documento', documento)
-
-        if (!isSenaQr && user?.ficha_asignada) {
-          query = query.eq('ficha', user.ficha_asignada)
-        }
-
-        const { data: aprendices } = await query.limit(1)
-
-        if (aprendices && aprendices.length > 0) {
-          const aprendiz = aprendices[0] as unknown as Aprendice
-
-          if (isSenaQr) {
-            await doAutoMark(aprendiz)
-            setScannedAprendiz(null)
-            clearMark()
-            return
-          }
-
-          setScannedAprendiz(aprendiz)
-        } else {
-          setLookupError('Aprendiz no encontrado')
-        }
-      } catch {
-        setLookupError('Error al buscar aprendiz')
-      }
+    if (!documento) {
+      setLookupError('No se pudo leer el documento')
+      setIsProcessing(false)
+      return
     }
-  }, [user, doAutoMark, clearMark])
+
+    try {
+      const isSenaQr = decodedText.startsWith('SENA:')
+      let query = insforge.database
+        .from('aprendices')
+        .select('*')
+        .eq('documento', documento)
+
+      if (!isSenaQr && user?.ficha_asignada) {
+        query = query.eq('ficha', user.ficha_asignada)
+      }
+
+      const { data: aprendices } = await query.limit(1)
+
+      if (!aprendices || aprendices.length === 0) {
+        setLookupError('Aprendiz no encontrado')
+        setIsProcessing(false)
+        return
+      }
+
+      const aprendiz = aprendices[0] as unknown as Aprendice
+      setLastAprendiz(aprendiz)
+
+      const result = await markAttendance(aprendiz.id, 'P')
+
+      setIsProcessing(false)
+
+      if (result.ok) {
+        if ('vibrate' in navigator) {
+          navigator.vibrate([100, 50, 100])
+        }
+        addToast({
+          message: `✓ ${aprendiz.nombre} ${aprendiz.apellido} — Presente`,
+          type: 'success',
+        })
+        sendNotification(
+          'Asistencia Registrada',
+          `${aprendiz.nombre} ${aprendiz.apellido} marcado como presente`,
+          '/'
+        )
+      } else {
+        addToast({
+          message: 'Error al registrar asistencia',
+          type: 'error',
+        })
+      }
+    } catch {
+      setLookupError('Error al buscar aprendiz')
+      setIsProcessing(false)
+    }
+  }, [user, markAttendance, addToast, sendNotification, clearMark])
 
   const handleScanError = useCallback(() => {
     // silent
   }, [])
 
-  const handleMark = async (estado: 'P' | 'T' | 'J') => {
-    if (!scannedAprendiz) return
-    const result = await markAttendance(scannedAprendiz.id, estado)
-    if ('vibrate' in navigator) {
-      navigator.vibrate([100, 50, 100])
-    }
-    if (result.ok) {
-      const estadoLabel = estado === 'P' ? 'Presente' : estado === 'T' ? 'Tarde' : 'Justificado'
-      addToast({
-        message: `✓ ${scannedAprendiz.nombre} ${scannedAprendiz.apellido} — ${estadoLabel}`,
-        type: 'success',
-      })
-      sendNotification(
-        'Asistencia Registrada',
-        `${scannedAprendiz.nombre} ${scannedAprendiz.apellido} marcado como ${estadoLabel}`,
-        '/'
-      )
-    } else {
-      addToast({
-        message: 'Error al registrar asistencia',
-        type: 'error',
-      })
-    }
-  }
-
   const handleContinue = () => {
-    setScannedAprendiz(null)
+    setLastAprendiz(null)
     setLookupError(null)
     clearMark()
-  }
-
-  const getInitials = (nombre: string, apellido: string) => {
-    return `${nombre.charAt(0)}${apellido.charAt(0)}`.toUpperCase()
   }
 
   return (
@@ -144,111 +126,82 @@ export function ScanPage() {
           <div className="scan-line absolute left-2 right-2 top-2 h-px bg-accent-soft shadow-[0_0_12px_2px_rgba(2,132,199,0.6)]" />
         </div>
         <div className="absolute inset-x-0 bottom-0 px-6 pb-5 pt-12 bg-gradient-to-t from-primary to-transparent pointer-events-none">
-          <div className="text-on-primary text-sm font-medium text-center">Apunta al QR de la ficha</div>
+          <div className="text-on-primary text-sm font-medium text-center">Apunta al QR del aprendiz</div>
         </div>
       </section>
 
-      {scannedAprendiz || lookupError ? (
+      {isProcessing && (
+        <section className="rounded-2xl bg-surface border border-border p-4 text-center view-enter">
+          <div className="inline-flex items-center gap-3">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <span className="text-sm text-muted-fg">Registrando asistencia...</span>
+          </div>
+        </section>
+      )}
+
+      {lookupError && (
+        <section className="rounded-2xl bg-surface border border-border p-4 view-enter">
+          <div className="text-center">
+            <div className="font-medium text-sm text-state-ausente">{lookupError}</div>
+            <button
+              onClick={handleContinue}
+              className="mt-3 h-11 px-6 rounded-xl bg-primary text-on-primary text-sm font-semibold active:scale-[0.98] transition-transform cursor-pointer"
+            >
+              Escanear otro
+            </button>
+          </div>
+        </section>
+      )}
+
+      {markError && (
+        <section className="rounded-2xl bg-surface border border-border p-4 view-enter">
+          <div className="text-center">
+            <div className="rounded-lg bg-state-ausente-bg text-state-ausente text-sm p-3">{markError}</div>
+            <button
+              onClick={handleContinue}
+              className="mt-3 w-full h-11 rounded-xl border border-border bg-surface text-sm font-medium text-muted-fg hover:bg-muted transition-colors cursor-pointer"
+            >
+              Escanear otro
+            </button>
+          </div>
+        </section>
+      )}
+
+      {asistencia && lastAprendiz && (
         <section className="rounded-2xl bg-surface border border-border overflow-hidden view-enter">
-          <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/40">
+          <div className="px-4 py-3 border-b border-border bg-muted/40">
             <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-fg">
-              {lookupError ? 'Error de lectura' : 'Última lectura'}
+              Asistencia registrada
             </div>
           </div>
-
-          {lookupError ? (
-            <div className="p-4 text-center">
-              <div className="font-medium text-sm text-state-ausente">{lookupError}</div>
-              <button
-                onClick={handleContinue}
-                className="mt-3 h-11 px-6 rounded-xl bg-primary text-on-primary text-sm font-semibold active:scale-[0.98] transition-transform cursor-pointer"
-              >
-                Escanear otro
-              </button>
-            </div>
-          ) : scannedAprendiz && !asistencia && (
-            <>
-              <div className="p-4 flex items-center gap-4">
-                <div className="shrink-0 w-14 h-14 rounded-full bg-muted flex items-center justify-center text-sm font-semibold text-muted-fg">
-                  {getInitials(scannedAprendiz.nombre, scannedAprendiz.apellido)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-[15px] truncate">{scannedAprendiz.nombre} {scannedAprendiz.apellido}</div>
-                  <div className="text-xs text-muted-fg tabular-nums">{scannedAprendiz.ficha} · doc {scannedAprendiz.documento}</div>
-                </div>
-              </div>
-              <div className="px-4 pb-4 grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => handleMark('P')}
-                  disabled={isMarking}
-                  className="h-12 rounded-xl bg-state-presente text-white font-semibold text-sm active:scale-[0.98] transition flex flex-col items-center justify-center gap-0.5 cursor-pointer disabled:opacity-50"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  <span className="text-[11px]">Presente</span>
-                </button>
-                <button
-                  onClick={() => handleMark('T')}
-                  disabled={isMarking}
-                  className="h-12 rounded-xl bg-state-tarde text-white font-semibold text-sm active:scale-[0.98] transition flex flex-col items-center justify-center gap-0.5 cursor-pointer disabled:opacity-50"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-                  </svg>
-                  <span className="text-[11px]">Tarde</span>
-                </button>
-                <button
-                  onClick={() => handleMark('J')}
-                  disabled={isMarking}
-                  className="h-12 rounded-xl bg-state-justificado text-white font-semibold text-sm active:scale-[0.98] transition flex flex-col items-center justify-center gap-0.5 cursor-pointer disabled:opacity-50"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                  </svg>
-                  <span className="text-[11px]">Justificado</span>
-                </button>
-              </div>
-            </>
-          )}
-
-          {isMarking && (
-            <div className="px-4 pb-4 text-center text-sm text-muted-fg">Registrando asistencia...</div>
-          )}
-
-          {markError && (
-            <div className="px-4 pb-4">
-              <div className="rounded-lg bg-state-ausente-bg text-state-ausente text-sm p-3">{markError}</div>
-              <button
-                onClick={handleContinue}
-                className="mt-3 w-full h-11 rounded-xl border border-border bg-surface text-sm font-medium text-muted-fg hover:bg-muted transition-colors cursor-pointer"
-              >
-                Escanear otro
-              </button>
-            </div>
-          )}
-
-          {asistencia && (
-            <div className="p-4 text-center">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-state-presente-bg text-state-presente text-sm font-semibold mb-3">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <div className="p-4">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="shrink-0 w-14 h-14 rounded-full bg-state-presente-bg flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-state-presente">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
-                Asistencia registrada
               </div>
-              <div className="text-xs text-muted-fg mb-3">
-                {asistencia.estado === 'P' ? 'Presente' : asistencia.estado === 'T' ? 'Tarde' : 'Justificado'} — {asistencia.hora_entrada}
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-[15px] truncate">{lastAprendiz.nombre} {lastAprendiz.apellido}</div>
+                <div className="text-xs text-muted-fg tabular-nums">{lastAprendiz.ficha} · doc {lastAprendiz.documento}</div>
               </div>
-              <button
-                onClick={handleContinue}
-                className="w-full h-11 rounded-xl bg-primary text-on-primary text-sm font-semibold active:scale-[0.98] transition-transform cursor-pointer"
-              >
-                Escanear otro
-              </button>
             </div>
-          )}
+            <div className="flex items-center justify-center gap-2 text-sm text-state-presente font-semibold mb-4">
+              <span>Presente</span>
+              <span className="text-muted-fg">—</span>
+              <span className="tabular-nums">{asistencia.hora_entrada}</span>
+            </div>
+            <button
+              onClick={handleContinue}
+              className="w-full h-11 rounded-xl bg-primary text-on-primary text-sm font-semibold active:scale-[0.98] transition-transform cursor-pointer"
+            >
+              Escanear otro
+            </button>
+          </div>
         </section>
-      ) : (
+      )}
+
+      {!isProcessing && !lookupError && !markError && !asistencia && (
         <section className="rounded-2xl border border-dashed border-border bg-surface px-5 py-8 text-center">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted text-muted-fg mb-3">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -263,5 +216,3 @@ export function ScanPage() {
     </div>
   )
 }
-
-
