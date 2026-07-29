@@ -3,7 +3,7 @@ import { aprendicesService } from '../services/aprendicesService'
 import type { CrearAprendiceParams } from '../services/aprendicesService'
 
 interface BuscarAprendicesParams {
-  ficha: number
+  ficha?: number
   search?: string
   estado?: string
   limit?: number
@@ -14,12 +14,9 @@ export function useBuscarAprendices(params: BuscarAprendicesParams) {
   return useQuery({
     queryKey: ['aprendices', 'buscar', params.ficha, params.search, params.estado, params.limit, params.offset],
     queryFn: async () => {
-      console.log('Buscando aprendices con ficha:', params.ficha)
       const result = await aprendicesService.buscarAprendices(params)
-      console.log('Resultado:', result)
       return result
     },
-    enabled: !!params.ficha,
   })
 }
 

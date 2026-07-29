@@ -9,7 +9,7 @@ export function useAuth() {
 
   useEffect(() => {
     const initAuth = async () => {
-      if (user?.id?.startsWith('demo-')) {
+      if (user?.email?.includes('.demo@')) {
         setLoading(false)
         return
       }
@@ -43,7 +43,7 @@ export function useAuth() {
     }
 
     initAuth()
-  }, [login, logout, setLoading, user?.id])
+  }, [login, logout, setLoading, user?.id, user?.email])
 
   const signInWithGoogle = async () => {
     setLoading(true)

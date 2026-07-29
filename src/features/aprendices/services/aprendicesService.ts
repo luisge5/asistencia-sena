@@ -16,7 +16,7 @@ interface ActualizarAprendiceParams extends CrearAprendiceParams {
 }
 
 interface BuscarAprendicesParams {
-  ficha: number
+  ficha?: number
   search?: string
   estado?: string
   limit?: number
@@ -120,7 +120,10 @@ export const aprendicesService = {
     let query = insforge.database
       .from('aprendices')
       .select('*')
-      .eq('ficha', params.ficha)
+
+    if (params.ficha && params.ficha > 0) {
+      query = query.eq('ficha', params.ficha)
+    }
 
     if (params.search) {
       query = query.or(`nombre.ilike.%${params.search}%,apellido.ilike.%${params.search}%,documento.ilike.%${params.search}%`)

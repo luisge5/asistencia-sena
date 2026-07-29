@@ -1,17 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useBuscarAprendices } from '../hooks/useAprendices'
-import { useAuthStore } from '@/stores/authStore'
 
 export function AprendicesPage() {
-  const { user } = useAuthStore()
   const [search, setSearch] = useState('')
   const [filtroEstado, setFiltroEstado] = useState<string>('')
 
-  const ficha = user?.ficha_asignada ?? 0
-
   const { data: result, isLoading } = useBuscarAprendices({
-    ficha,
     search: search || undefined,
     estado: filtroEstado || undefined,
   })

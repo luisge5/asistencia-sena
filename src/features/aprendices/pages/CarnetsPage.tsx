@@ -1,15 +1,11 @@
 import { useState, useRef, useCallback } from 'react'
-import { useAuthStore } from '@/stores/authStore'
 import { useBuscarAprendices } from '../hooks/useAprendices'
 import { CarnetCard } from '../components/CarnetCard'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 
 export function CarnetsPage() {
-  const { user } = useAuthStore()
-  const ficha = user?.ficha_asignada ?? 0
-
-  const { data: result, isLoading } = useBuscarAprendices({ ficha })
+  const { data: result, isLoading } = useBuscarAprendices({})
   const aprendices = result?.ok ? result.data : []
 
   const [exporting, setExporting] = useState(false)
@@ -74,7 +70,7 @@ export function CarnetsPage() {
         y += imgH + 8
       }
 
-      pdf.save(`carnets-ficha-${ficha}.pdf`)
+      pdf.save(`carnets-todos.pdf`)
     } finally {
       setExporting(false)
     }

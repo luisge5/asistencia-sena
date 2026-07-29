@@ -20,22 +20,22 @@ export function LoginPage() {
     localStorage.clear()
 
     const demoUser = rol === 'instructor' ? {
-      id: 'demo-instructor-001',
+      id: 'a0000000-0000-0000-0000-000000000001',
       email: 'instructor.demo@sena.edu.co',
       nombre: 'Carlos',
       apellido: 'Rodriguez',
       rol: 'instructor' as const,
-      ficha_asignada: 2774266,
+      ficha_asignada: 2857520,
       centro: 'Centro de Tecnología - Bogotá',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     } : {
-      id: 'demo-aprendiz-001',
+      id: 'a0000000-0000-0000-0000-000000000002',
       email: 'aprendiz.demo@sena.edu.co',
       nombre: 'Maria',
       apellido: 'Lopez',
       rol: 'instructor' as const,
-      ficha_asignada: 2774266,
+      ficha_asignada: 2857520,
       centro: 'Centro de Tecnología - Bogotá',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
