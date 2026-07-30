@@ -12,7 +12,7 @@ interface MarkAttendanceResult {
   asistencia: Asistencia | null
   isLoading: boolean
   error: string | null
-  markAttendance: (aprendizId: string, estado: 'P' | 'T' | 'J') => Promise<Result<Asistencia>>
+  markAttendance: (aprendizId: string, estado: 'P' | 'T' | 'J', fichaOverride?: number, centroOverride?: string) => Promise<Result<Asistencia>>
   clearResult: () => void
 }
 
@@ -21,7 +21,7 @@ export function useMarkAttendance({ instructorId, ficha, centro }: UseMarkAttend
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const markAttendance = async (aprendizId: string, estado: 'P' | 'T' | 'J'): Promise<Result<Asistencia>> => {
+  const markAttendance = async (aprendizId: string, estado: 'P' | 'T' | 'J', fichaOverride?: number, centroOverride?: string): Promise<Result<Asistencia>> => {
     setIsLoading(true)
     setError(null)
     setAsistencia(null)
@@ -36,8 +36,8 @@ export function useMarkAttendance({ instructorId, ficha, centro }: UseMarkAttend
       hora_entrada: horaEntrada,
       estado,
       instructor_id: instructorId,
-      ficha,
-      centro,
+      ficha: fichaOverride || ficha,
+      centro: centroOverride || centro,
     }
 
     const result = await asistenciaService.registrarAsistencia(params)

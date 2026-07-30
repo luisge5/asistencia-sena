@@ -133,11 +133,10 @@ export const asistenciaService = {
     return { ok: true, data: undefined }
   },
 
-  async obtenerHistorial(ficha: number, fechaInicio: string, fechaFin: string): Promise<Result<Asistencia[]>> {
+  async obtenerHistorial(fechaInicio: string, fechaFin: string): Promise<Result<Asistencia[]>> {
     const { data, error } = await insforge.database
       .from('asistencias')
       .select('*')
-      .eq('ficha', ficha)
       .gte('fecha', fechaInicio)
       .lte('fecha', fechaFin)
       .order('fecha', { ascending: false })

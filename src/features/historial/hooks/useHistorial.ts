@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { asistenciaService } from '@/features/asistencias/services/asistenciaService'
-import { useAuthStore } from '@/stores/authStore'
 import type { Asistencia } from '@/types'
 
 interface HistorialFilters {
@@ -26,7 +25,6 @@ interface UseHistorialResult {
 }
 
 export function useHistorial(): UseHistorialResult {
-  const { user } = useAuthStore()
   const [asistencias, setAsistencias] = useState<Asistencia[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -35,17 +33,12 @@ export function useHistorial(): UseHistorialResult {
     fechaFin: new Date().toISOString().split('T')[0],
   }))
 
-  const ficha = user?.ficha_asignada ?? 0
-
   useEffect(() => {
     const fetchHistorial = async () => {
-      if (!ficha) return
-
       setIsLoading(true)
       setError(null)
 
       const result = await asistenciaService.obtenerHistorial(
-        ficha,
         filters.fechaInicio,
         filters.fechaFin
       )
@@ -60,7 +53,7 @@ export function useHistorial(): UseHistorialResult {
     }
 
     fetchHistorial()
-  }, [ficha, filters.fechaInicio, filters.fechaFin])
+  }, [filters.fechaInicio, filters.fechaFin])
 
   const estadisticas = {
     total: asistencias.length,

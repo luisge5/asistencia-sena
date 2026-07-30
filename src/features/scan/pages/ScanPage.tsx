@@ -89,7 +89,7 @@ export function ScanPage() {
       const aprendiz = aprendices as unknown as Aprendice
       setLastAprendiz(aprendiz)
 
-      const result = await markAttendance(aprendiz.id, 'P')
+      const result = await markAttendance(aprendiz.id, 'P', aprendiz.ficha, aprendiz.centro)
 
       setIsProcessing(false)
       processingRef.current = false
@@ -110,7 +110,7 @@ export function ScanPage() {
         )
       } else {
         addToast({
-          message: 'Error al registrar',
+          message: `Error: ${result.error?.message || 'desconocido'}`,
           type: 'error',
         })
       }

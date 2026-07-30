@@ -1,12 +1,8 @@
 import { useState } from 'react'
 import { useHistorial } from '../hooks/useHistorial'
 import { useBuscarAprendices } from '@/features/aprendices/hooks/useAprendices'
-import { useAuthStore } from '@/stores/authStore'
 
 export function HistorialPage() {
-  const { user } = useAuthStore()
-  const ficha = user?.ficha_asignada ?? 0
-
   const {
     asistencias,
     isLoading,
@@ -16,7 +12,7 @@ export function HistorialPage() {
     exportToCSV,
   } = useHistorial()
 
-  const { data: aprendicesResult } = useBuscarAprendices({ ficha })
+  const { data: aprendicesResult } = useBuscarAprendices({})
   const aprendices = aprendicesResult?.ok ? aprendicesResult.data : []
 
   const [sortBy, setSortBy] = useState<'riesgo' | 'asistencia' | 'racha'>('riesgo')
