@@ -3,19 +3,22 @@ import { useAuthStore } from '@/stores/authStore'
 import { authService } from '../services/authService'
 import { insforge } from '@/lib/insforge'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export function useAuth() {
   const { user, isAuthenticated, isLoading, error, login, logout, setLoading, setError, clearError } =
     useAuthStore()
 
   useEffect(() => {
     const initAuth = async () => {
-      if (user?.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id)) {
+      if (user?.id && !UUID_RE.test(user.id)) {
         logout()
         setLoading(false)
         return
       }
 
       if (user?.email?.includes('.demo@')) {
+        try { await insforge.auth.signOut() } catch { /* ignore */ }
         setLoading(false)
         return
       }
