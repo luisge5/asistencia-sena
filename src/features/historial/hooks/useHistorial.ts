@@ -5,6 +5,7 @@ import type { Asistencia } from '@/types'
 interface HistorialFilters {
   fechaInicio: string
   fechaFin: string
+  ficha: number
 }
 
 interface UseHistorialResult {
@@ -31,6 +32,7 @@ export function useHistorial(): UseHistorialResult {
   const [filters, setFilters] = useState<HistorialFilters>(() => ({
     fechaInicio: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     fechaFin: new Date().toISOString().split('T')[0],
+    ficha: 0,
   }))
 
   useEffect(() => {
@@ -39,6 +41,7 @@ export function useHistorial(): UseHistorialResult {
       setError(null)
 
       const result = await asistenciaService.obtenerHistorial(
+        filters.ficha,
         filters.fechaInicio,
         filters.fechaFin
       )
@@ -53,7 +56,7 @@ export function useHistorial(): UseHistorialResult {
     }
 
     fetchHistorial()
-  }, [filters.fechaInicio, filters.fechaFin])
+  }, [filters.ficha, filters.fechaInicio, filters.fechaFin])
 
   const estadisticas = {
     total: asistencias.length,

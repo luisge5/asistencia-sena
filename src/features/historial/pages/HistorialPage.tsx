@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useHistorial } from '../hooks/useHistorial'
 import { useBuscarAprendices } from '@/features/aprendices/hooks/useAprendices'
 
@@ -12,8 +12,13 @@ export function HistorialPage() {
     exportToCSV,
   } = useHistorial()
 
-  const { data: aprendicesResult } = useBuscarAprendices({})
-  const aprendices = aprendicesResult?.ok ? aprendicesResult.data : []
+  const { data: allAprendicesResult } = useBuscarAprendices({})
+  const allAprendices = useMemo(() => allAprendicesResult?.ok ? allAprendicesResult.data : [], [allAprendicesResult])
+
+  const fichas = useMemo(() => {
+    const set = new Set(allAprendices.map(a => a.ficha).filter(f => f > 0))
+    return Array.from(set).sort((a, b) => a - b)
+  }, [allAprendices])
 
   const [sortBy, setSortBy] = useState<'riesgo' | 'asistencia' | 'racha'>('riesgo')
 
@@ -162,6 +167,16 @@ export function HistorialPage() {
         </button>
       </div>
       <div className="flex gap-3">
+        <select
+          value={filters.ficha}
+          onChange={(e) => setFilters({ ...filters, ficha: Number(e.target.value) })}
+          className="h-10 rounded-xl bg-surface border border-border px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/15"
+        >
+          <option value={0}>Todas las fichas</option>
+          {fichas.map(f => (
+            <option key={f} value={f}>{f}</option>
+          ))}
+        </select>
         <input
           type="date"
           value={filters.fechaInicio}

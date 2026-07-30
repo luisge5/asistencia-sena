@@ -133,12 +133,18 @@ export const asistenciaService = {
     return { ok: true, data: undefined }
   },
 
-  async obtenerHistorial(fechaInicio: string, fechaFin: string): Promise<Result<Asistencia[]>> {
-    const { data, error } = await insforge.database
+  async obtenerHistorial(ficha: number, fechaInicio: string, fechaFin: string): Promise<Result<Asistencia[]>> {
+    let query = insforge.database
       .from('asistencias')
       .select('*')
       .gte('fecha', fechaInicio)
       .lte('fecha', fechaFin)
+
+    if (ficha && ficha > 0) {
+      query = query.eq('ficha', ficha)
+    }
+
+    const { data, error } = await query
       .order('fecha', { ascending: false })
       .order('created_at', { ascending: false })
 
