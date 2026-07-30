@@ -18,6 +18,7 @@ export function LoginPage() {
     }
     
     localStorage.clear()
+    localStorage.removeItem('auth-storage')
 
     const demoUser = rol === 'instructor' ? {
       id: 'a0000000-0000-0000-0000-000000000001',

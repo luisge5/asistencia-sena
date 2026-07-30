@@ -9,6 +9,12 @@ export function useAuth() {
 
   useEffect(() => {
     const initAuth = async () => {
+      if (user?.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id)) {
+        logout()
+        setLoading(false)
+        return
+      }
+
       if (user?.email?.includes('.demo@')) {
         setLoading(false)
         return
