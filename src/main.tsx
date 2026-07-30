@@ -9,7 +9,7 @@ import './index.css'
 const originalConsoleError = console.error
 console.error = (...args: unknown[]) => {
   const msg = String(args[0] ?? '')
-  if (msg.includes('auth/refresh') || msg.includes('Realtime setup error')) return
+  if (msg.includes('auth/refresh') || msg.includes('Realtime setup error') || msg.includes('send-push-notification') || msg.includes('Failed to send notification')) return
   originalConsoleError(...args)
 }
 

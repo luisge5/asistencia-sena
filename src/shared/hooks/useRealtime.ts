@@ -25,8 +25,6 @@ export function useRealtimeAsistencias(
   }, [])
 
   useEffect(() => {
-    if (!ficha) return
-
     let mounted = true
 
     const setup = async () => {

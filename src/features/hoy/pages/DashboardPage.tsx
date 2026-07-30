@@ -27,9 +27,7 @@ export function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const undoStack = useRef<UndoEntry[]>([])
 
-  const ficha = user?.ficha_asignada ?? 0
-
-  useRealtimeAsistencias(ficha, async (payload) => {
+  useRealtimeAsistencias(0, async (payload) => {
     if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
       const asistencia = payload.new
       if (asistencia) {
@@ -52,17 +50,11 @@ export function DashboardPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!ficha) {
-        setIsLoading(false)
-        return
-      }
-
       setIsLoading(true)
 
       const { data: aprendicesData } = await insforge.database
         .from('aprendices')
         .select('*')
-        .eq('ficha', ficha)
         .eq('estado', 'activo')
         .order('apellido')
 
@@ -70,7 +62,6 @@ export function DashboardPage() {
       const { data: asistenciasData } = await insforge.database
         .from('asistencias')
         .select('*')
-        .eq('ficha', ficha)
         .eq('fecha', today)
 
       if (aprendicesData) {
@@ -89,7 +80,7 @@ export function DashboardPage() {
     }
 
     fetchData()
-  }, [ficha])
+  }, [])
 
   const handleUndo = async (entry: UndoEntry) => {
     setAsistenciasHoy((prev) => ({
@@ -108,7 +99,11 @@ export function DashboardPage() {
   }
 
   const handleMarcar = async (aprendizId: string, estado: EstadoAsistencia) => {
-    if (!user || !ficha) return
+    if (!user) return
+
+    const aprendiz = aprendices.find(a => a.id === aprendizId)
+    const aprendizFicha = aprendiz?.ficha || 0
+    const aprendizCentro = aprendiz?.centro || ''
 
     const previousEstado = asistenciasHoy[aprendizId] ?? null
 
@@ -146,8 +141,8 @@ export function DashboardPage() {
             hora_entrada: now,
             estado: estado,
             instructor_id: user.id,
-            ficha: ficha,
-            centro: user.centro || '',
+            ficha: aprendizFicha,
+            centro: aprendizCentro,
           })
           .select()
           .single()
