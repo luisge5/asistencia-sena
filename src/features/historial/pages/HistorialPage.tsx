@@ -12,13 +12,13 @@ export function HistorialPage() {
     exportToCSV,
   } = useHistorial()
 
-  const { data: allAprendicesResult } = useBuscarAprendices({})
-  const allAprendices = useMemo(() => allAprendicesResult?.ok ? allAprendicesResult.data : [], [allAprendicesResult])
+  const { data: aprendicesResult } = useBuscarAprendices({})
+  const aprendices = useMemo(() => aprendicesResult?.ok ? aprendicesResult.data : [], [aprendicesResult])
 
   const fichas = useMemo(() => {
-    const set = new Set(allAprendices.map(a => a.ficha).filter(f => f > 0))
+    const set = new Set(aprendices.map(a => a.ficha).filter(f => f > 0))
     return Array.from(set).sort((a, b) => a - b)
-  }, [allAprendices])
+  }, [aprendices])
 
   const [sortBy, setSortBy] = useState<'riesgo' | 'asistencia' | 'racha'>('riesgo')
 

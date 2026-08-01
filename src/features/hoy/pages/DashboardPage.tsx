@@ -1,18 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuthStore } from '@/stores/authStore'
-import { useToastStore } from '@/shared/stores/toastStore'
 import { useRealtimeAsistencias } from '@/shared/hooks/useRealtime'
 import { insforge } from '@/lib/insforge'
 import type { Aprendice, Asistencia } from '@/types'
 
 type EstadoAsistencia = 'P' | 'T' | 'J' | 'F' | null
-
-interface UndoEntry {
-  aprendizId: string
-  previousEstado: EstadoAsistencia
-  recordId?: string
-}
 
 const estadoLabels: Record<string, string> = {
   P: 'Presente', T: 'Tarde', J: 'Justificado',
@@ -20,12 +12,9 @@ const estadoLabels: Record<string, string> = {
 
 export function DashboardPage() {
   const navigate = useNavigate()
-  const { user } = useAuthStore()
-  const { addToast } = useToastStore()
   const [aprendices, setAprendices] = useState<Aprendice[]>([])
   const [asistenciasHoy, setAsistenciasHoy] = useState<Record<string, EstadoAsistencia>>({})
   const [isLoading, setIsLoading] = useState(true)
-  const undoStack = useRef<UndoEntry[]>([])
 
   useRealtimeAsistencias(0, async (payload) => {
     if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
@@ -52,28 +41,31 @@ export function DashboardPage() {
     const fetchData = async () => {
       setIsLoading(true)
 
-      const { data: aprendicesData } = await insforge.database
-        .from('aprendices')
-        .select('*')
-        .eq('estado', 'activo')
-        .order('apellido')
-
       const today = new Date().toISOString().split('T')[0]
       const { data: asistenciasData } = await insforge.database
         .from('asistencias')
         .select('*')
         .eq('fecha', today)
 
-      if (aprendicesData) {
-        setAprendices(aprendicesData)
-      }
+      if (asistenciasData && asistenciasData.length > 0) {
+        const ids = asistenciasData.map((a: Asistencia) => a.aprendiz_id)
+        const { data: aprendicesData } = await insforge.database
+          .from('aprendices')
+          .select('*')
+          .in('id', ids)
 
-      if (asistenciasData) {
+        if (aprendicesData) {
+          setAprendices(aprendicesData)
+        }
+
         const asistenciasMap: Record<string, EstadoAsistencia> = {}
         asistenciasData.forEach((a: Asistencia) => {
           asistenciasMap[a.aprendiz_id] = a.estado as EstadoAsistencia
         })
         setAsistenciasHoy(asistenciasMap)
+      } else {
+        setAprendices([])
+        setAsistenciasHoy({})
       }
 
       setIsLoading(false)
@@ -82,93 +74,10 @@ export function DashboardPage() {
     fetchData()
   }, [])
 
-  const handleUndo = async (entry: UndoEntry) => {
-    setAsistenciasHoy((prev) => ({
-      ...prev,
-      [entry.aprendizId]: entry.previousEstado,
-    }))
-
-    if (entry.previousEstado === null && entry.recordId) {
-      await insforge.database.from('asistencias').delete().eq('id', entry.recordId)
-    } else if (entry.recordId && entry.previousEstado) {
-      await insforge.database
-        .from('asistencias')
-        .update({ estado: entry.previousEstado })
-        .eq('id', entry.recordId)
-    }
-  }
-
-  const handleMarcar = async (aprendizId: string, estado: EstadoAsistencia) => {
-    if (!user) return
-
-    const aprendiz = aprendices.find(a => a.id === aprendizId)
-    const aprendizFicha = aprendiz?.ficha || 0
-    const aprendizCentro = aprendiz?.centro || ''
-
-    const previousEstado = asistenciasHoy[aprendizId] ?? null
-
-    if (previousEstado === estado) return
-
-    setAsistenciasHoy((prev) => ({
-      ...prev,
-      [aprendizId]: estado,
-    }))
-
-    if (estado) {
-      const today = new Date().toISOString().split('T')[0]
-      const now = new Date().toLocaleTimeString('es-CO', { hour12: false })
-
-      const { data: existing } = await insforge.database
-        .from('asistencias')
-        .select('id')
-        .eq('aprendiz_id', aprendizId)
-        .eq('fecha', today)
-        .maybeSingle()
-
-      let recordId = existing?.id
-
-      if (existing) {
-        await insforge.database
-          .from('asistencias')
-          .update({ estado, hora_entrada: now })
-          .eq('id', existing.id)
-      } else {
-        const { data: newRecord } = await insforge.database
-          .from('asistencias')
-          .insert({
-            aprendiz_id: aprendizId,
-            fecha: today,
-            hora_entrada: now,
-            estado: estado,
-            instructor_id: user.id,
-            ficha: aprendizFicha,
-            centro: aprendizCentro,
-          })
-          .select()
-          .single()
-
-        recordId = newRecord?.id
-      }
-
-      const entry: UndoEntry = { aprendizId, previousEstado, recordId }
-      undoStack.current.push(entry)
-
-      addToast({
-        message: `Marcado como ${estadoLabels[estado] || estado}`,
-        type: 'success',
-        action: {
-          label: 'Deshacer',
-          onClick: () => handleUndo(entry),
-        },
-      })
-    }
-  }
-
   const valores = Object.values(asistenciasHoy)
   const presentes = valores.filter((v) => v === 'P' || v === 'T').length
   const total = aprendices.length
   const pct = total ? Math.round((presentes / total) * 100) : 0
-  const faltan = aprendices.filter((a) => !asistenciasHoy[a.id])
   const marcados = Object.entries(asistenciasHoy)
     .map(([id, estado]) => {
       const a = aprendices.find((ap) => ap.id === id)
@@ -249,74 +158,21 @@ export function DashboardPage() {
 
       <section>
         <div className="flex items-baseline justify-between mb-3">
-          <h2 className="text-base font-semibold tracking-tight">Faltan por marcar</h2>
-          <span className="text-xs text-muted-fg tabular-nums font-medium">{faltan.length} de {total}</span>
+          <h2 className="text-base font-semibold tracking-tight">Registrados hoy</h2>
+          <span className="text-xs text-muted-fg tabular-nums font-medium">{marcados.length}</span>
         </div>
-        {faltan.length === 0 ? (
+        {marcados.length === 0 ? (
           <div className="rounded-2xl border border-border bg-surface p-6 text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-state-presente-bg text-state-presente mb-3">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted text-muted-fg mb-3">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" /><path d="M14 14h3v3h-3z" /><path d="M20 14v3" /><path d="M17 20h4" /><path d="M14 20v1" />
               </svg>
             </div>
-            <div className="font-semibold text-sm">Todos marcados</div>
-            <div className="text-muted-fg text-xs mt-1">0 faltantes hoy</div>
+            <div className="font-semibold text-sm">Sin registros hoy</div>
+            <div className="text-muted-fg text-xs mt-1">Escanea un QR para registrar asistencia</div>
           </div>
         ) : (
-          <div className="rounded-2xl bg-surface border border-border divide-y divide-border overflow-hidden">
-            {faltan.map((a) => (
-              <div key={a.id} className="flex items-center gap-3 px-4 py-3">
-                <div className="shrink-0 w-10 h-10 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-muted-fg">
-                  {getInitials(a.nombre, a.apellido)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{a.nombre} {a.apellido}</div>
-                  <div className="text-[11px] text-muted-fg tabular-nums">{a.ficha}</div>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => handleMarcar(a.id, 'P')}
-                    className="w-9 h-9 rounded-lg bg-state-presente-bg text-state-presente hover:brightness-95 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
-                    title="Presente"
-                    aria-label={`Marcar a ${a.nombre} como Presente`}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => handleMarcar(a.id, 'T')}
-                    className="w-9 h-9 rounded-lg bg-state-tarde-bg text-state-tarde hover:brightness-95 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
-                    title="Tarde"
-                    aria-label={`Marcar a ${a.nombre} como Tarde`}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => handleMarcar(a.id, 'J')}
-                    className="w-9 h-9 rounded-lg bg-state-justificado-bg text-state-justificado hover:brightness-95 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
-                    title="Justificado"
-                    aria-label={`Marcar a ${a.nombre} como Justificado`}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {marcados.length > 0 && (
-        <section>
-          <div className="flex items-baseline justify-between mb-3">
-            <h2 className="text-base font-semibold tracking-tight">Ya marcados</h2>
-            <span className="text-xs text-muted-fg font-medium tabular-nums">{marcados.length}</span>
-          </div>
           <div className="rounded-2xl bg-surface border border-border divide-y divide-border overflow-hidden">
             {marcados.map((item) => (
               <div key={item.id} className="flex items-center gap-3 px-4 py-3">
@@ -334,8 +190,8 @@ export function DashboardPage() {
               </div>
             ))}
           </div>
-        </section>
-      )}
+        )}
+      </section>
     </div>
   )
 }
