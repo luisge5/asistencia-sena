@@ -1,17 +1,70 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useBuscarAprendices } from '../hooks/useAprendices'
+import { insforge } from '@/lib/insforge'
 
 export function AprendicesPage() {
   const [search, setSearch] = useState('')
   const [filtroEstado, setFiltroEstado] = useState<string>('')
+  const [fichaSeleccionada, setFichaSeleccionada] = useState<number>(0)
+  const [fichas, setFichas] = useState<number[]>([])
+  const [asistenciasHoy, setAsistenciasHoy] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    const fetchFichas = async () => {
+      const { data } = await insforge.database
+        .from('aprendices')
+        .select('ficha')
+        .order('ficha')
+      if (data) {
+        const unique = [...new Set(data.map((d: { ficha: number }) => d.ficha))].filter(f => f > 0).sort((a, b) => a - b)
+        setFichas(unique)
+      }
+    }
+    fetchFichas()
+  }, [])
+
+  useEffect(() => {
+    if (fichaSeleccionada <= 0) return
+    let cancelled = false
+    const fetchAsistencias = async () => {
+      const today = new Date().toISOString().split('T')[0]
+      const { data } = await insforge.database
+        .from('asistencias')
+        .select('aprendiz_id')
+        .eq('ficha', fichaSeleccionada)
+        .eq('fecha', today)
+      if (!cancelled) {
+        setAsistenciasHoy(data ? new Set(data.map((d: { aprendiz_id: string }) => d.aprendiz_id)) : new Set())
+      }
+    }
+    fetchAsistencias()
+    return () => { cancelled = true }
+  }, [fichaSeleccionada])
 
   const { data: result, isLoading } = useBuscarAprendices({
+    ficha: fichaSeleccionada || undefined,
     search: search || undefined,
-    estado: filtroEstado || undefined,
   })
 
-  const aprendices = result?.ok ? result.data : []
+  const allAprendices = useMemo(() => result?.ok ? result.data : [], [result])
+
+  const aprendices = useMemo(() => {
+    return allAprendices.map(a => ({
+      ...a,
+      scanned: asistenciasHoy.has(a.id),
+    }))
+  }, [allAprendices, asistenciasHoy])
+
+  const filteredAprendices = useMemo(() => {
+    if (!filtroEstado) return aprendices
+    if (filtroEstado === 'activo') return aprendices.filter(a => a.scanned)
+    if (filtroEstado === 'inactivo') return aprendices.filter(a => !a.scanned)
+    return aprendices
+  }, [aprendices, filtroEstado])
+
+  const activos = aprendices.filter(a => a.scanned).length
+  const inactivos = aprendices.length - activos
 
   const getInitials = (nombre: string, apellido: string) => {
     return `${nombre.charAt(0)}${apellido.charAt(0)}`.toUpperCase()
@@ -19,7 +72,18 @@ export function AprendicesPage() {
 
   return (
     <div className="view-enter px-5 pt-5 pb-6 space-y-4">
-      <div className="sticky top-0 -mx-5 px-5 pt-1 pb-3 bg-background z-10">
+      <div className="sticky top-0 -mx-5 px-5 pt-1 pb-3 bg-background z-10 space-y-3">
+        <select
+          value={fichaSeleccionada}
+          onChange={(e) => setFichaSeleccionada(Number(e.target.value))}
+          className="w-full h-11 rounded-xl bg-surface border border-border px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/15"
+        >
+          <option value={0}>Seleccionar ficha</option>
+          {fichas.map(f => (
+            <option key={f} value={f}>{f}</option>
+          ))}
+        </select>
+
         <div className="relative">
           <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-fg">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -29,7 +93,7 @@ export function AprendicesPage() {
           <input
             type="search"
             inputMode="search"
-            placeholder="Buscar por nombre o ficha"
+            placeholder="Buscar por nombre o documento"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full h-11 rounded-xl pl-11 pr-4 bg-surface border border-border text-sm placeholder:text-muted-fg/70 focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/40 transition"
@@ -37,54 +101,60 @@ export function AprendicesPage() {
         </div>
       </div>
 
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-base font-semibold tracking-tight">
-          Padrón · {isLoading ? '...' : aprendices.length}
-        </h2>
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1 text-[11px]">
-            {[
-              { value: '', label: 'Todos' },
-              { value: 'activo', label: 'Activos' },
-              { value: 'inactivo', label: 'Inactivos' },
-            ].map((filter) => (
-              <button
-                key={filter.value}
-                onClick={() => setFiltroEstado(filter.value)}
-                className={`px-2 py-1 rounded-md font-medium transition-colors cursor-pointer ${
-                  filtroEstado === filter.value
-                    ? 'bg-primary text-on-primary'
-                    : 'text-muted-fg hover:bg-muted'
-                }`}
+      {fichaSeleccionada > 0 && (
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-base font-semibold tracking-tight">
+            Padrón · {isLoading ? '...' : filteredAprendices.length}
+          </h2>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1 text-[11px]">
+              {[
+                { value: '', label: 'Todos' },
+                { value: 'activo', label: `Activos (${activos})` },
+                { value: 'inactivo', label: `Inactivos (${inactivos})` },
+              ].map((filter) => (
+                <button
+                  key={filter.value}
+                  onClick={() => setFiltroEstado(filter.value)}
+                  className={`px-2 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+                    filtroEstado === filter.value
+                      ? 'bg-primary text-on-primary'
+                      : 'text-muted-fg hover:bg-muted'
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Link
+                to="/aprendices/carnets"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent-soft transition-colors"
               >
-                {filter.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Link
-              to="/aprendices/carnets"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent-soft transition-colors"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="4" width="20" height="16" rx="2" /><path d="M7 15h0" /><path d="M11 15h6" /><circle cx="8.5" cy="10.5" r="2" /><path d="M15 8h2" />
-              </svg>
-              <span>Carnets</span>
-            </Link>
-            <Link
-              to="/aprendices/importar"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent-soft transition-colors"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              <span>Nuevo</span>
-            </Link>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2" /><path d="M7 15h0" /><path d="M11 15h6" /><circle cx="8.5" cy="10.5" r="2" /><path d="M15 8h2" />
+                </svg>
+                <span>Carnets</span>
+              </Link>
+              <Link
+                to="/aprendices/importar"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent-soft transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                <span>Nuevo</span>
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {isLoading ? (
+      {fichaSeleccionada <= 0 ? (
+        <div className="text-center text-muted-fg text-sm py-10">
+          Selecciona una ficha para ver los aprendices
+        </div>
+      ) : isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3 px-4 py-3 animate-pulse">
@@ -96,27 +166,27 @@ export function AprendicesPage() {
             </div>
           ))}
         </div>
-      ) : aprendices.length === 0 ? (
+      ) : filteredAprendices.length === 0 ? (
         <div className="text-center text-muted-fg text-sm py-10">
-          {search ? `Sin resultados para "${search}"` : 'No hay aprendices registrados'}
+          {search ? `Sin resultados para "${search}"` : 'No hay aprendices en esta ficha'}
         </div>
       ) : (
         <div className="rounded-2xl bg-surface border border-border divide-y divide-border overflow-hidden">
-          {aprendices.map((a) => (
+          {filteredAprendices.map((a) => (
             <div key={a.id} className="flex items-center gap-3 px-4 py-3">
               <div className="shrink-0 w-11 h-11 rounded-full bg-muted flex items-center justify-center text-sm font-semibold text-muted-fg">
                 {getInitials(a.nombre, a.apellido)}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">{a.nombre} {a.apellido}</div>
-                <div className="text-[11px] text-muted-fg tabular-nums">{a.ficha} · {a.tipo_documento}: {a.documento}</div>
+                <div className="text-[11px] text-muted-fg tabular-nums">{a.tipo_documento}: {a.documento}</div>
               </div>
               <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${
-                a.estado === 'activo'
+                a.scanned
                   ? 'text-state-presente bg-state-presente-bg'
                   : 'text-state-ausente bg-state-ausente-bg'
               }`}>
-                {a.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                {a.scanned ? 'Activo' : 'Inactivo'}
               </span>
             </div>
           ))}
