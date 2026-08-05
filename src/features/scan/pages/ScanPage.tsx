@@ -12,7 +12,6 @@ export function ScanPage() {
   const [lastAprendiz, setLastAprendiz] = useState<Aprendice | null>(null)
   const [lookupError, setLookupError] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
-  const lastScanRef = useRef(0)
   const processingRef = useRef(false)
   const lastDocumentoRef = useRef('')
 
@@ -37,8 +36,6 @@ export function ScanPage() {
   }, [asistencia, lastAprendiz, clearMark])
 
   const handleScanSuccess = useCallback(async (result: QrScanResult) => {
-    const now = Date.now()
-    if (now - lastScanRef.current < 3000) return
     if (processingRef.current) return
 
     const decodedText = result.decodedText
@@ -52,9 +49,8 @@ export function ScanPage() {
     if (!documento) return
     if (documento === lastDocumentoRef.current) return
 
-    lastScanRef.current = now
-    lastDocumentoRef.current = documento
     processingRef.current = true
+    lastDocumentoRef.current = documento
 
     setLookupError(null)
     setLastAprendiz(null)
