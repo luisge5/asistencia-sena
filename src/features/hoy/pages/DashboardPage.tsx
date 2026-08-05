@@ -10,16 +10,27 @@ const estadoLabels: Record<string, string> = {
   P: 'Presente', T: 'Tarde', J: 'Justificado',
 }
 
+const SESSION_KEY = 'asistencia-session-start'
+
+function getSessionStart(): string {
+  const stored = localStorage.getItem(SESSION_KEY)
+  if (stored) return stored
+  const now = new Date().toISOString()
+  localStorage.setItem(SESSION_KEY, now)
+  return now
+}
+
 export function DashboardPage() {
   const navigate = useNavigate()
   const [aprendices, setAprendices] = useState<Aprendice[]>([])
   const [asistenciasHoy, setAsistenciasHoy] = useState<Record<string, EstadoAsistencia>>({})
   const [isLoading, setIsLoading] = useState(true)
+  const [sessionStart, setSessionStart] = useState(getSessionStart)
 
   useRealtimeAsistencias(0, async (payload) => {
     if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
       const asistencia = payload.new
-      if (asistencia) {
+      if (asistencia && asistencia.created_at >= sessionStart) {
         setAsistenciasHoy((prev) => ({
           ...prev,
           [asistencia.aprendiz_id]: asistencia.estado as EstadoAsistencia,
@@ -46,6 +57,7 @@ export function DashboardPage() {
         .from('asistencias')
         .select('*')
         .eq('fecha', today)
+        .gte('created_at', sessionStart)
 
       if (asistenciasData && asistenciasData.length > 0) {
         const ids = asistenciasData.map((a: Asistencia) => a.aprendiz_id)
@@ -72,7 +84,15 @@ export function DashboardPage() {
     }
 
     fetchData()
-  }, [])
+  }, [sessionStart])
+
+  const handleNewSession = () => {
+    if (confirm('¿Iniciar nueva sesión? Los registros anteriores quedan guardados en el historial.')) {
+      const now = new Date().toISOString()
+      localStorage.setItem(SESSION_KEY, now)
+      setSessionStart(now)
+    }
+  }
 
   const valores = Object.values(asistenciasHoy)
   const presentes = valores.filter((v) => v === 'P' || v === 'T').length
@@ -148,12 +168,7 @@ export function DashboardPage() {
             <span>Escanear ficha</span>
           </button>
           <button
-            onClick={() => {
-              if (confirm('¿Iniciar nueva sesión? Los registros actuales quedan guardados en el historial.')) {
-                setAprendices([])
-                setAsistenciasHoy({})
-              }
-            }}
+            onClick={handleNewSession}
             className="h-11 px-4 rounded-xl border border-on-primary/20 text-on-primary text-sm font-medium hover:bg-on-primary/10 transition-colors cursor-pointer"
           >
             Nueva sesión
@@ -174,7 +189,7 @@ export function DashboardPage() {
                 <rect x="3" y="14" width="7" height="7" rx="1" /><path d="M14 14h3v3h-3z" /><path d="M20 14v3" /><path d="M17 20h4" /><path d="M14 20v1" />
               </svg>
             </div>
-            <div className="font-semibold text-sm">Sin registros hoy</div>
+            <div className="font-semibold text-sm">Sin registros en esta sesión</div>
             <div className="text-muted-fg text-xs mt-1">Escanea un QR para registrar asistencia</div>
           </div>
         ) : (
