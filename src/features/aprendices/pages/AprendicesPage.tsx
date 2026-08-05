@@ -4,7 +4,6 @@ import { useBuscarAprendices } from '../hooks/useAprendices'
 import { insforge } from '@/lib/insforge'
 
 export function AprendicesPage() {
-  const [search, setSearch] = useState('')
   const [filtroEstado, setFiltroEstado] = useState<string>('')
   const [fichaSeleccionada, setFichaSeleccionada] = useState<number>(0)
   const [fichaInput, setFichaInput] = useState('')
@@ -62,7 +61,6 @@ export function AprendicesPage() {
 
   const { data: result, isLoading } = useBuscarAprendices({
     ficha: fichaSeleccionada || undefined,
-    search: search || undefined,
   })
 
   const allAprendices = useMemo(() => result?.ok ? result.data : [], [result])
@@ -129,22 +127,6 @@ export function AprendicesPage() {
               ))}
             </div>
           )}
-        </div>
-
-        <div className="relative">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-fg">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </span>
-          <input
-            type="search"
-            inputMode="search"
-            placeholder="Buscar por nombre o documento"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-11 rounded-xl pl-11 pr-4 bg-surface border border-border text-sm placeholder:text-muted-fg/70 focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/40 transition"
-          />
         </div>
       </div>
 
@@ -215,7 +197,7 @@ export function AprendicesPage() {
         </div>
       ) : filteredAprendices.length === 0 ? (
         <div className="text-center text-muted-fg text-sm py-10">
-          {search ? `Sin resultados para "${search}"` : 'No hay aprendices en esta ficha'}
+          No hay aprendices en esta ficha
         </div>
       ) : (
         <div className="rounded-2xl bg-surface border border-border divide-y divide-border overflow-hidden">
