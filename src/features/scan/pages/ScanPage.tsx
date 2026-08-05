@@ -14,6 +14,7 @@ export function ScanPage() {
   const [isProcessing, setIsProcessing] = useState(false)
   const lastScanRef = useRef(0)
   const processingRef = useRef(false)
+  const lastDocumentoRef = useRef('')
 
   const user = useAuthStore((state) => state.user)
   const { addToast } = useToastStore()
@@ -28,6 +29,7 @@ export function ScanPage() {
     if (asistencia && lastAprendiz) {
       const timer = setTimeout(() => {
         setLastAprendiz(null)
+        lastDocumentoRef.current = ''
         clearMark()
       }, 2500)
       return () => clearTimeout(timer)
@@ -36,9 +38,22 @@ export function ScanPage() {
 
   const handleScanSuccess = useCallback(async (result: QrScanResult) => {
     const now = Date.now()
-    if (now - lastScanRef.current < 500) return
+    if (now - lastScanRef.current < 3000) return
     if (processingRef.current) return
+
+    const decodedText = result.decodedText
+    const documento = decodedText.startsWith('SENA:')
+      ? decodedText.slice(5).trim()
+      : (() => {
+          const parsed = qrScannerService.parseQrData(decodedText)
+          return parsed.ok ? parsed.data.documento || parsed.data.doc || parsed.data.raw : decodedText
+        })()
+
+    if (!documento) return
+    if (documento === lastDocumentoRef.current) return
+
     lastScanRef.current = now
+    lastDocumentoRef.current = documento
     processingRef.current = true
 
     setLookupError(null)
@@ -48,22 +63,6 @@ export function ScanPage() {
 
     if ('vibrate' in navigator) {
       navigator.vibrate(30)
-    }
-
-    const decodedText = result.decodedText
-
-    const documento = decodedText.startsWith('SENA:')
-      ? decodedText.slice(5).trim()
-      : (() => {
-          const parsed = qrScannerService.parseQrData(decodedText)
-          return parsed.ok ? parsed.data.documento || parsed.data.doc || parsed.data.raw : decodedText
-        })()
-
-    if (!documento) {
-      setLookupError('No se pudo leer el documento')
-      setIsProcessing(false)
-      processingRef.current = false
-      return
     }
 
     try {
