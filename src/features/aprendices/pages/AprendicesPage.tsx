@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useBuscarAprendices } from '../hooks/useAprendices'
 import { insforge } from '@/lib/insforge'
@@ -7,8 +7,11 @@ export function AprendicesPage() {
   const [search, setSearch] = useState('')
   const [filtroEstado, setFiltroEstado] = useState<string>('')
   const [fichaSeleccionada, setFichaSeleccionada] = useState<number>(0)
+  const [fichaInput, setFichaInput] = useState('')
+  const [showFichas, setShowFichas] = useState(false)
   const [fichas, setFichas] = useState<number[]>([])
   const [asistenciasHoy, setAsistenciasHoy] = useState<Set<string>>(new Set())
+  const fichaRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const fetchFichas = async () => {
@@ -23,6 +26,21 @@ export function AprendicesPage() {
     }
     fetchFichas()
   }, [])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (fichaRef.current && !fichaRef.current.contains(e.target as Node)) {
+        setShowFichas(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const fichasFiltradas = useMemo(() => {
+    if (!fichaInput) return fichas
+    return fichas.filter(f => String(f).includes(fichaInput))
+  }, [fichas, fichaInput])
 
   useEffect(() => {
     if (fichaSeleccionada <= 0) return
@@ -73,16 +91,45 @@ export function AprendicesPage() {
   return (
     <div className="view-enter px-5 pt-5 pb-6 space-y-4">
       <div className="sticky top-0 -mx-5 px-5 pt-1 pb-3 bg-background z-10 space-y-3">
-        <select
-          value={fichaSeleccionada}
-          onChange={(e) => setFichaSeleccionada(Number(e.target.value))}
-          className="w-full h-11 rounded-xl bg-surface border border-border px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/15"
-        >
-          <option value={0}>Seleccionar ficha</option>
-          {fichas.map(f => (
-            <option key={f} value={f}>{f}</option>
-          ))}
-        </select>
+        <div ref={fichaRef} className="relative">
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-fg">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </span>
+          <input
+            type="text"
+            inputMode="numeric"
+            placeholder="Buscar ficha..."
+            value={fichaInput}
+            onFocus={() => setShowFichas(true)}
+            onChange={(e) => {
+              setFichaInput(e.target.value)
+              setShowFichas(true)
+              if (!e.target.value) setFichaSeleccionada(0)
+            }}
+            className="w-full h-11 rounded-xl pl-11 pr-4 bg-surface border border-border text-sm placeholder:text-muted-fg/70 focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/40 transition"
+          />
+          {showFichas && fichasFiltradas.length > 0 && (
+            <div className="absolute z-20 top-full mt-1 w-full max-h-60 overflow-y-auto rounded-xl bg-surface border border-border shadow-lg">
+              {fichasFiltradas.map(f => (
+                <button
+                  key={f}
+                  onClick={() => {
+                    setFichaSeleccionada(f)
+                    setFichaInput(String(f))
+                    setShowFichas(false)
+                  }}
+                  className={`w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors cursor-pointer ${
+                    f === fichaSeleccionada ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground'
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="relative">
           <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-fg">
