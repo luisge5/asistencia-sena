@@ -148,10 +148,15 @@ export function DashboardPage() {
             <span>Escanear ficha</span>
           </button>
           <button
-            onClick={() => navigate('/aprendices')}
+            onClick={() => {
+              if (confirm('¿Iniciar nueva sesión? Los registros actuales quedan guardados en el historial.')) {
+                setAprendices([])
+                setAsistenciasHoy({})
+              }
+            }}
             className="h-11 px-4 rounded-xl border border-on-primary/20 text-on-primary text-sm font-medium hover:bg-on-primary/10 transition-colors cursor-pointer"
           >
-            Lista
+            Nueva sesión
           </button>
         </div>
       </section>
